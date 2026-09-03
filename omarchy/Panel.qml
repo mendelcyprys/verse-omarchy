@@ -227,6 +227,23 @@ Panel {
   readonly property var corpusOptions: ["Tanakh", "New Testament", "Quran"]
   readonly property var _corpusKey: ({ "Tanakh": "tanakh", "New Testament": "nt", "Quran": "quran" })
 
+  // A printer's ornament — a hairline broken by a small centred lozenge —
+  // in place of the plain rules bracketing the passage.
+  component OrnamentRule: RowLayout {
+    Layout.fillWidth: true
+    Layout.topMargin: Style.space(1)
+    Layout.bottomMargin: Style.space(1)
+    spacing: Style.space(9)
+    Rectangle { Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter; implicitHeight: 1; color: root.fg; opacity: 0.16 }
+    Rectangle {
+      Layout.alignment: Qt.AlignVCenter
+      implicitWidth: Style.space(4); implicitHeight: Style.space(4)
+      rotation: 45; antialiasing: true
+      color: root.fg; opacity: 0.35
+    }
+    Rectangle { Layout.fillWidth: true; Layout.alignment: Qt.AlignVCenter; implicitHeight: 1; color: root.fg; opacity: 0.16 }
+  }
+
   // The "book" segment a bare ref carries in the current corpus. For the Quran
   // every ref is "Quran S:A", so the surah lives in the chapter slot.
   readonly property string _navBook: root.corpus === "quran"
@@ -1560,7 +1577,7 @@ Panel {
           }
         }
 
-        PanelSeparator { Layout.fillWidth: true; foreground: root.fg }
+        OrnamentRule {}
 
         Text {
           visible: root.loading && root.verses.length === 0
@@ -1593,12 +1610,39 @@ Panel {
           font.pixelSize: Style.font.caption
         }
 
-        Flickable {
-          id: versesFlick
+        // The passage, given a little age: a faint paper grain behind the
+        // text, and a soft fade where it meets the top and bottom edges,
+        // like a leaf in a bound book.
+        Item {
+          id: versesArea
           Layout.fillWidth: true
           Layout.preferredHeight: Math.min(versesCol.implicitHeight, Style.space(380))
           visible: root.verses.length > 0 && (root.showHebrew || root.showEnglish)
           clip: true
+
+          Canvas {
+            id: grain
+            anchors.fill: parent
+            opacity: 0.55
+            onPaint: {
+              var ctx = getContext("2d")
+              ctx.clearRect(0, 0, width, height)
+              var n = Math.floor(width * height / 52)
+              for (var i = 0; i < n; i++) {
+                ctx.fillStyle = (i % 2)
+                  ? "rgba(0,0,0,0.055)" : "rgba(255,255,255,0.045)"
+                ctx.fillRect(Math.random() * width, Math.random() * height,
+                             Math.random() < 0.82 ? 1 : 2, 1)
+              }
+            }
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            Component.onCompleted: requestPaint()
+          }
+
+        Flickable {
+          id: versesFlick
+          anchors.fill: parent
           contentWidth: width
           contentHeight: versesCol.implicitHeight
           boundsBehavior: Flickable.StopAtBounds
@@ -1688,27 +1732,74 @@ Panel {
                   wrapMode: Text.WordWrap
                 }
 
-                Text {
+                // English. The opening verse of a single-verse passage gets
+                // an enlarged initial, set in Cardo — an old book's versal.
+                RowLayout {
+                  id: enRow
                   Layout.fillWidth: true
                   Layout.row: root.hebrewFirst ? 1 : 0
                   Layout.column: 0
                   visible: root.showEnglish && verseBlock.modelData.en !== ""
-                  textFormat: Text.PlainText
-                  text: (root.verses.length > 1 ? (verseBlock.modelData.num + " ") : "")
-                    + verseBlock.modelData.en
-                  color: Qt.darker(root.fg, 1.32)
-                  font.family: root.fontFamily
-                  font.pixelSize: Math.round(Style.font.body * root.textScale)
-                  lineHeight: 1.42
-                  wrapMode: Text.WordWrap
-                  renderType: Text.NativeRendering
+                  spacing: 0
+
+                  readonly property bool dropCap: verseBlock.index === 0
+                    && root.verses.length === 1
+                    && /^[A-Za-z]/.test(String(verseBlock.modelData.en))
+
+                  Text {
+                    visible: enRow.dropCap
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: Math.round(1 * root.textScale)
+                    Layout.rightMargin: Math.round(2 * root.textScale)
+                    textFormat: Text.PlainText
+                    text: String(verseBlock.modelData.en).charAt(0)
+                    color: Qt.darker(root.fg, 1.1)
+                    font.family: root.hebrewFont
+                    font.pixelSize: Math.round(Style.font.body * root.textScale * 2.35)
+                    lineHeight: 0.86
+                  }
+
+                  Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignTop
+                    textFormat: Text.PlainText
+                    text: enRow.dropCap
+                      ? String(verseBlock.modelData.en).slice(1)
+                      : ((root.verses.length > 1 ? (verseBlock.modelData.num + " ") : "")
+                         + verseBlock.modelData.en)
+                    color: Qt.darker(root.fg, 1.32)
+                    font.family: root.fontFamily
+                    font.pixelSize: Math.round(Style.font.body * root.textScale)
+                    lineHeight: 1.42
+                    wrapMode: Text.WordWrap
+                    renderType: Text.NativeRendering
+                  }
                 }
               }
             }
           }
+          }
+
+          // The passage meets the edges softly, not with a hard cut.
+          Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: Style.space(11)
+            gradient: Gradient {
+              GradientStop { position: 0.0; color: Color.popups.background }
+              GradientStop { position: 1.0; color: "transparent" }
+            }
+          }
+          Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: Style.space(11)
+            gradient: Gradient {
+              GradientStop { position: 0.0; color: "transparent" }
+              GradientStop { position: 1.0; color: Color.popups.background }
+            }
+          }
         }
 
-        PanelSeparator { Layout.fillWidth: true; foreground: root.fg }
+        OrnamentRule {}
 
         RowLayout {
           Layout.fillWidth: true

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "erikmanhem.verse",
   "name": "Verse",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "Erik Manhem",
   "license": "MIT",
   "description": "Read the Tanakh, New Testament or Quran in the original language alongside a public-domain English translation, in a dropdown from the bar.",
