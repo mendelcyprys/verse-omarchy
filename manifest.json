@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "erikmanhem.verse",
   "name": "Verse",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Erik Manhem",
   "license": "MIT",
   "description": "Read the Tanakh in Hebrew and the JPS 1917 translation, in a dropdown from the bar.",

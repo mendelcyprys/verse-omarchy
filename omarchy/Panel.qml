@@ -263,6 +263,16 @@ Panel {
   }
   function stepChapter(delta) { root.goToChapter((root._navParts ? root._navParts.chap : root.selChap) + delta) }
 
+  // Back to verse 1 of the chapter we're already in — the verse-number tap
+  // target (goToChapter's same-chapter guard would swallow this).
+  function goToVerseOne() {
+    if (root.loading) return
+    var p = root._navParts
+    var book = p ? p.book : bookDrop.value
+    var chap = p ? p.chap : root.selChap
+    root.load(book + " " + chap + ":1", true)
+  }
+
   function scrollVerses(dir) {
     var f = versesFlick
     if (!f) return
@@ -847,14 +857,31 @@ Panel {
               Behavior on opacity { NumberAnimation { duration: 140 } }
             }
             Text {
+              id: chapNum
+              // Tap to jump to chapter 1 — live only when we're not there,
+              // like A− / A+ going inert at the zoom limits.
+              readonly property bool resettable: root.selChap > 1 && !root.loading
               text: root.selChap
-              color: root.fg
+              color: (chapNumHover.hovered && chapNum.resettable) ? Color.accent : root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.body
               font.bold: true
               horizontalAlignment: Text.AlignHCenter
               Layout.preferredWidth: Style.space(24)
               Layout.alignment: Qt.AlignVCenter
+
+              HoverHandler {
+                id: chapNumHover
+                enabled: chapNum.resettable
+                cursorShape: Qt.PointingHandCursor
+              }
+              TapHandler { enabled: chapNum.resettable; onTapped: root.goToChapter(1) }
+              PanelToolTip {
+                visible: chapNumHover.hovered && chapNum.resettable
+                text: "Jump to chapter 1"
+                panelForeground: root.fg
+                fontFamily: root.fontFamily
+              }
             }
             Button {
               text: "›"
@@ -895,14 +922,30 @@ Panel {
               Behavior on opacity { NumberAnimation { duration: 140 } }
             }
             Text {
+              id: verseNum
+              // Tap to jump to verse 1 of this chapter — live only when past it.
+              readonly property bool resettable: root.selVerse > 1 && !root.loading
               text: root.selVerse
-              color: root.fg
+              color: (verseNumHover.hovered && verseNum.resettable) ? Color.accent : root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.body
               font.bold: true
               horizontalAlignment: Text.AlignHCenter
               Layout.preferredWidth: Style.space(24)
               Layout.alignment: Qt.AlignVCenter
+
+              HoverHandler {
+                id: verseNumHover
+                enabled: verseNum.resettable
+                cursorShape: Qt.PointingHandCursor
+              }
+              TapHandler { enabled: verseNum.resettable; onTapped: root.goToVerseOne() }
+              PanelToolTip {
+                visible: verseNumHover.hovered && verseNum.resettable
+                text: "Jump to verse 1"
+                panelForeground: root.fg
+                fontFamily: root.fontFamily
+              }
             }
             Button {
               text: "›"

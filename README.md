@@ -11,7 +11,9 @@ reference and see it in **Hebrew** (the vocalised Masoretic text) and the
 - **Left-click** the widget to open the dropdown.
 - **Book** — the dropdown at the top (type to filter the 39 books).
 - **Chapter / Verse** — the `‹ N ›` steppers. The arrows roll across chapter
-  borders and grey out at the start of Genesis / end of Chronicles.
+  borders and grey out at the start of Genesis / end of Chronicles. Click the
+  **number** itself to jump back to chapter 1 / verse 1 (only when you're not
+  already there).
 - **Random** — a random passage from the Tanakh.
 - **‹ Back** — return to the passage you were reading before the last jump;
   it keeps a history, so you can step back through several.
