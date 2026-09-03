@@ -40,6 +40,7 @@ Panel {
   property bool showEnglish: true
   property bool heTaamim: true               // cantillation marks (trop)
   property bool heNiqqud: true               // vowel points
+  property bool hebrewFirst: true            // Hebrew above English, or below
   property real textScale: 1.0
 
   // ---- background caches ------------------------------------------
@@ -132,6 +133,7 @@ Panel {
     if (s.showEnglish !== undefined) root.showEnglish = s.showEnglish !== false
     if (s.taamim !== undefined) root.heTaamim = s.taamim !== false
     if (s.niqqud !== undefined) root.heNiqqud = s.niqqud !== false
+    if (s.hebrewFirst !== undefined) root.hebrewFirst = s.hebrewFirst !== false
     if (s.scale !== undefined) {
       var sc = parseFloat(s.scale)
       if (!isNaN(sc)) root.textScale = Math.max(0.75, Math.min(2.0, sc))
@@ -146,6 +148,7 @@ Panel {
       showEnglish: root.showEnglish,
       taamim: root.heTaamim,
       niqqud: root.heNiqqud,
+      hebrewFirst: root.hebrewFirst,
       scale: root.textScale
     }
     root.settings = next
@@ -681,6 +684,9 @@ Panel {
       }
       onTextKey: function(t) {
         if (t === "r" || t === "R") root.loadRandom()
+        else if (t === "s" || t === "S") {
+          if (root.showHebrew && root.showEnglish) { root.hebrewFirst = !root.hebrewFirst; root.persistSoon() }
+        }
         else if (t === "[" || t === "H") root.stepChapter(-1)
         else if (t === "]" || t === "L") root.stepChapter(1)
         else if (t === "-" || t === "_") root.setScale(root.textScale - 0.125)
@@ -905,7 +911,7 @@ Panel {
           Layout.fillWidth: true
           horizontalAlignment: Text.AlignHCenter
           textFormat: Text.PlainText
-          text: "h l  verse      j k  scroll      [ ]  chapter      r  random"
+          text: "h l  verse     j k  scroll     [ ]  chapter     r  random     s  swap"
           color: Qt.darker(root.fg, 2.4)
           font.family: root.fontFamily
           font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -939,6 +945,19 @@ Panel {
             horizontalPadding: Style.spacing.controlPaddingX
             verticalPadding: Style.spacing.controlPaddingY
             onClicked: { root.showEnglish = !root.showEnglish; root.persistSoon() }
+          }
+
+          // Swap which script sits on top. Only meaningful with both showing.
+          Button {
+            text: "\uf07d"   // nf-fa-arrows_v
+            foreground: root.fg
+            visible: root.showHebrew && root.showEnglish
+            tooltipText: root.hebrewFirst ? "Put English on top" : "Put Hebrew on top"
+            fontFamily: root.fontFamily
+            fontSize: Style.font.body
+            horizontalPadding: Style.spacing.controlGap
+            verticalPadding: Style.spacing.controlPaddingY
+            onClicked: { root.hebrewFirst = !root.hebrewFirst; root.persistSoon() }
           }
 
           Rectangle {
@@ -1097,6 +1116,22 @@ Panel {
             }
           }
 
+          // Flipping the Hebrew/English order: fade through, with a little
+          // vertical bounce so it reads as the blocks trading places.
+          Connections {
+            target: root
+            function onHebrewFirstChanged() { orderSwap.restart() }
+          }
+          SequentialAnimation {
+            id: orderSwap
+            PropertyAction { target: versesCol; property: "opacity"; value: 0 }
+            PropertyAction { target: swapShift; property: "y"; value: Style.space(-12) }
+            ParallelAnimation {
+              NumberAnimation { target: versesCol; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+              NumberAnimation { target: swapShift; property: "y"; to: 0; duration: 360; easing.type: Easing.OutBack }
+            }
+          }
+
           Column {
             id: versesCol
             width: versesFlick.width
@@ -1106,16 +1141,19 @@ Panel {
             Repeater {
               model: root.verses
 
-              delegate: Column {
+              delegate: GridLayout {
                 id: verseBlock
                 required property var modelData
                 width: versesCol.width
-                spacing: Style.space(7)
+                columns: 1
+                rowSpacing: Style.space(7)
 
                 readonly property string heText: root.renderHe(verseBlock.modelData.heRaw)
 
                 Text {
-                  width: parent.width
+                  Layout.fillWidth: true
+                  Layout.row: root.hebrewFirst ? 0 : 1
+                  Layout.column: 0
                   visible: root.showHebrew && verseBlock.heText !== ""
                   textFormat: Text.PlainText
                   text: verseBlock.heText
@@ -1128,7 +1166,9 @@ Panel {
                 }
 
                 Text {
-                  width: parent.width
+                  Layout.fillWidth: true
+                  Layout.row: root.hebrewFirst ? 1 : 0
+                  Layout.column: 0
                   visible: root.showEnglish && verseBlock.modelData.en !== ""
                   textFormat: Text.PlainText
                   text: (root.verses.length > 1 ? (verseBlock.modelData.num + " ") : "")

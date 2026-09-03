@@ -31,6 +31,7 @@ a pile of requests.
 | `j` / `k`  (or `↑` / `↓`) | **scroll** a long passage |
 | `[` / `]`  (or `H` / `L`) | previous / next **chapter** |
 | `r` | random passage |
+| `s` | swap which script sits on top |
 | `−` / `+` | text smaller / bigger |
 | `0` | reset text size to 100% |
 | `Esc` | close |
@@ -40,6 +41,7 @@ a pile of requests.
 A row of toggles under the navigation:
 
 - **Hebrew** / **English** — show each independently (or neither).
+- **⇅** — swap which one sits on top (only when both are shown).
 - **Trop** — cantillation marks (te'amim) on/off.
 - **Niqqud** — vowel points on/off.
 - **A− / A+** — text size, 75%–200%. Click the **percentage** to reset to 100%.
