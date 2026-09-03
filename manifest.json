@@ -2,17 +2,19 @@
   "schemaVersion": 1,
   "id": "erikmanhem.verse",
   "name": "Verse",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "author": "Erik Manhem",
   "license": "MIT",
-  "description": "Read the Tanakh, New Testament or Quran in the original language alongside a public-domain English translation, in a dropdown from the bar.",
-  "kinds": ["bar-widget"],
+  "description": "Read the Tanakh, New Testament, Latin Vulgate or Quran in the original language alongside a public-domain English translation, in a dropdown from the bar.",
+  "kinds": [
+    "bar-widget"
+  ],
   "entryPoints": {
     "barWidget": "omarchy/Panel.qml"
   },
   "barWidget": {
     "displayName": "Verse",
-    "description": "Pick a passage; read it in Hebrew / Greek / Arabic and English.",
+    "description": "Pick a passage; read it in Hebrew / Greek / Latin / Arabic and English.",
     "category": "Info",
     "allowMultiple": false,
     "defaultSection": "center",

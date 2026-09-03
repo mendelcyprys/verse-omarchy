@@ -13,10 +13,10 @@ translation, one above the other:
 
 <table>
   <tr>
-    <td width="25%" valign="top"><img src="screenshots/corpus-tanakh.png" alt="Tanakh — Genesis 1:1"></td>
-    <td width="25%" valign="top"><img src="screenshots/corpus-nt.png" alt="New Testament — John 3:16"></td>
-    <td width="25%" valign="top"><img src="screenshots/corpus-vulgate.png" alt="Vulgate — John 1:1"></td>
-    <td width="25%" valign="top"><img src="screenshots/corpus-quran.png" alt="Quran — Al-Ikhlaas 1"></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-tanakh.png" alt="Tanakh — Isaiah 40:1"><br><sub>Tanakh · Isaiah 40:1</sub></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-nt.png" alt="New Testament — Matthew 5:8"><br><sub>New Testament · Matthew 5:8</sub></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-vulgate.png" alt="Vulgate — Psalms 22:1"><br><sub>Vulgate · Psalm 22:1</sub></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-quran.png" alt="Quran — Al-Fatiha 1"><br><sub>Quran · Al-Fatiha 1</sub></td>
   </tr>
 </table>
 
@@ -90,12 +90,12 @@ dark — so the dropdown always sits with the rest of the desktop.
 
 <table>
   <tr>
-    <td align="center"><img src="screenshots/everforest.jpg" alt="Everforest"><br><sub>Everforest</sub></td>
-    <td align="center"><img src="screenshots/gruvbox.jpg" alt="Gruvbox"><br><sub>Gruvbox</sub></td>
+    <td align="center"><img src="screenshots/theme-catppuccin.jpg" alt="Catppuccin"><br><sub>Catppuccin · Psalm 23</sub></td>
+    <td align="center"><img src="screenshots/theme-nord.jpg" alt="Nord"><br><sub>Nord · Vulgate, John 1</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/tokyo-night.jpg" alt="Tokyo Night"><br><sub>Tokyo Night</sub></td>
-    <td align="center"><img src="screenshots/rose-pine.jpg" alt="Rose Pine"><br><sub>Rose Pine</sub></td>
+    <td align="center"><img src="screenshots/theme-kanagawa.jpg" alt="Kanagawa"><br><sub>Kanagawa · Quran, Al-Ikhlaas</sub></td>
+    <td align="center"><img src="screenshots/theme-matteblack.jpg" alt="Matte Black"><br><sub>Matte Black · Romans 8</sub></td>
   </tr>
 </table>
 

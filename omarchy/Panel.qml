@@ -1802,8 +1802,14 @@ Panel {
             onHeightChanged: requestPaint()
             Component.onCompleted: requestPaint()
 
-            // The paper never sits quite still — a very slow wander on two
-            // axes with different periods, plus a faint breath of opacity.
+            // Film-grain boil: re-scatter the speckle a few times a second so
+            // the texture is visibly alive, over a very slow two-axis drift.
+            Timer {
+              running: grain.visible
+              interval: 260
+              repeat: true
+              onTriggered: grain.requestPaint()
+            }
             transform: Translate { id: grainDrift }
             SequentialAnimation {
               running: grain.visible
@@ -1816,12 +1822,6 @@ Panel {
               loops: Animation.Infinite
               NumberAnimation { target: grainDrift; property: "y"; from: 6; to: -6; duration: 57000; easing.type: Easing.InOutSine }
               NumberAnimation { target: grainDrift; property: "y"; from: -6; to: 6; duration: 57000; easing.type: Easing.InOutSine }
-            }
-            SequentialAnimation on opacity {
-              running: grain.visible
-              loops: Animation.Infinite
-              NumberAnimation { from: 1.0; to: 0.82; duration: 9000; easing.type: Easing.InOutSine }
-              NumberAnimation { from: 0.82; to: 1.0; duration: 9000; easing.type: Easing.InOutSine }
             }
           }
 
