@@ -26,6 +26,7 @@ Panel {
   // ---- reference + result state -------------------------------------
   property string corpus: "tanakh"           // "tanakh" | "nt" | "quran"
   property string ref: "Genesis 1:1"
+  property var corpusRef: ({})                // corpus -> last ref there
   property string loadedRef: ""
   property string loadedHeRef: ""
   property var verses: []                    // [{ num, heRaw, en }]
@@ -284,13 +285,32 @@ Panel {
     return root.books.indexOf(p.book) >= 0
   }
 
+  // The last ref visited in each corpus, restored when you switch to it.
+  function corpusRefFor(key) {
+    var r = root.corpusRef ? root.corpusRef[key] : ""
+    return (r && root.validRef(key, r)) ? String(r) : root._corpora[key].defaultRef
+  }
+  function rememberCorpusRef() {
+    var m = {}
+    for (var k in root.corpusRef) m[k] = root.corpusRef[k]
+    m[root.corpus] = root.loadedRef !== "" ? root.loadedRef : root.ref
+    root.corpusRef = m
+  }
+
   // ---- settings -------------------------------------------------
   function loadSettings() {
     var s = root.settings || ({})
     if (s.corpus && root._corpora[s.corpus]) root.corpus = String(s.corpus)
+    if (s.corpusRef && typeof s.corpusRef === "object") {
+      var m = {}
+      for (var k in s.corpusRef) {
+        if (root._corpora[k] && root.validRef(k, s.corpusRef[k])) m[k] = String(s.corpusRef[k])
+      }
+      root.corpusRef = m
+    }
     if (s.ref) root.ref = String(s.ref)
     // A stale / wrong-corpus ref shouldn't strand us.
-    if (!root.validRef(root.corpus, root.ref)) root.ref = root.cx.defaultRef
+    if (!root.validRef(root.corpus, root.ref)) root.ref = root.corpusRefFor(root.corpus)
     if (s.showRefInBar !== undefined) root.showRefInBar = s.showRefInBar !== false
     if (s.showHebrew !== undefined) root.showHebrew = s.showHebrew !== false
     if (s.showEnglish !== undefined) root.showEnglish = s.showEnglish !== false
@@ -304,9 +324,11 @@ Panel {
   }
 
   function persistSettings() {
+    root.rememberCorpusRef()
     var next = {
       corpus: root.corpus,
       ref: root.ref,
+      corpusRef: root.corpusRef,
       showRefInBar: root.showRefInBar,
       showHebrew: root.showHebrew,
       showEnglish: root.showEnglish,
@@ -687,21 +709,24 @@ Panel {
       "--data-urlencode", "version=hebrew"]
   }
 
-  // Switch corpus. Every per-corpus cache is context — clear it all, land on
-  // that corpus's default reference, and start fresh.
+  // Switch corpus. Each corpus keeps its own place: stash where we are, drop
+  // the navigation context (history, random pool, in-flight fetches — those
+  // hold refs meaningless in the other corpus), then restore that corpus's
+  // last reference. The verse / shape caches are keyed by disjoint ref names
+  // across corpora, so they stay warm and switching back is instant.
   function setCorpus(key) {
     if (key === root.corpus || !root._corpora[key]) return
     root.flushPersist()
+    root.rememberCorpusRef()
     if (fetchProc.running) fetchProc.running = false
-    root._cache = ({}); root._cacheOrder = []
-    root._shapes = ({}); root._shapePending = ({}); root._shapeQueue = []; root._shapeActive = ""
+    if (prefetchProc.running) prefetchProc.running = false
     root._prefetchQueue = []; root._prefetchActive = ""
     root._randomPool = []; root._randomTries = 0
     root._history = []; root._restoringHistory = false
     root.verses = []
     root.loadedRef = ""; root.loadedHeRef = ""; root.pendingRef = ""; root.errorText = ""
     root.corpus = key
-    root.ref = root.cx.defaultRef
+    root.ref = root.corpusRefFor(key)
     root.syncMenuFrom(root.ref)
     root.load(root.ref, true)
     randomFillTimer.restart()
@@ -1635,6 +1660,7 @@ Panel {
               delegate: GridLayout {
                 id: verseBlock
                 required property var modelData
+                required property int index
                 width: versesCol.width
                 columns: 1
                 rowSpacing: Style.space(7)
@@ -1652,7 +1678,13 @@ Panel {
                   font.family: root.nativeFont
                   font.pixelSize: Math.round(Style.font.display * root.textScale)
                   horizontalAlignment: root.cx.rtl ? Text.AlignRight : Text.AlignLeft
-                  lineHeight: root.corpus === "quran" ? 1.85 : 1.5
+                  // Arabic tashkeel reaches well above the line; Greek needs
+                  // less air than pointed Hebrew.
+                  lineHeight: root.corpus === "quran" ? 1.9
+                    : root.corpus === "nt" ? 1.4 : 1.5
+                  // Keep the first line's high marks off the clipped top edge.
+                  topPadding: (root.corpus === "quran" && verseBlock.index === 0 && root.hebrewFirst)
+                    ? Math.round(8 * root.textScale) : 0
                   wrapMode: Text.WordWrap
                 }
 

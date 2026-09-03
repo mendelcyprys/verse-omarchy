@@ -37,7 +37,8 @@ The passages either side of where you are (and a little into the neighbouring
 chapters), plus a small pool of random passages, are fetched in the
 background, so moving around is normally instant. The controls disable
 themselves while a passage is actually loading, so mashing them can't queue
-up a pile of requests. Switching corpus starts each context fresh.
+up a pile of requests. Each corpus keeps its own place — switch away and
+back and you land where you left off.
 
 ### Keyboard (with the panel focused)
 
@@ -71,10 +72,10 @@ and from bundled versification tables for the New Testament and Quran.
 The **source** credit on the bottom line is a link — it opens the passage
 you're looking at on sefaria.org / bolls.life / quran.com in your browser.
 
-The corpus, last reference and all display settings are saved to this
-widget's entry in `~/.config/omarchy/shell.json`, so the next time you open
-it — or restart the shell — you land back where you were. Nothing else is
-stored.
+The corpus, the last reference in each corpus, and all display settings are
+saved to this widget's entry in `~/.config/omarchy/shell.json`, so the next
+time you open it — or restart the shell — you land back where you were.
+Nothing else is stored.
 
 ## Theming
 
