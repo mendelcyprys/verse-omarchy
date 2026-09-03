@@ -66,7 +66,7 @@ A row of toggles under the navigation:
 - **⇅** — swap which one sits on top (only when both are shown).
 - **Trop** — Hebrew cantillation marks (te'amim) on/off. Tanakh only.
 - **Niqqud / Tashkeel** — vowel points on/off. Tanakh and Quran.
-- **A− / A+** — text size, 75%–200%. Click the **percentage** to reset to 100%.
+- **A− / A+** — text size, 75%–250%. Click the **percentage** to reset to 100%.
 
 The steppers know each book's real shape (chapters, and verses per chapter),
 so they can't run past the end — from Sefaria's `/api/shape` for the Tanakh,

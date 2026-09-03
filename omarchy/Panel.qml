@@ -437,7 +437,7 @@ Panel {
     if (s.hebrewFirst !== undefined) root.hebrewFirst = s.hebrewFirst !== false
     if (s.scale !== undefined) {
       var sc = parseFloat(s.scale)
-      if (!isNaN(sc)) root.textScale = Math.max(0.75, Math.min(2.0, sc))
+      if (!isNaN(sc)) root.textScale = Math.max(0.75, Math.min(2.5, sc))
     }
   }
 
@@ -468,7 +468,7 @@ Panel {
   }
 
   function setScale(v) {
-    var clamped = Math.max(0.75, Math.min(2.0, Math.round(v * 1000) / 1000))
+    var clamped = Math.max(0.75, Math.min(2.5, Math.round(v * 1000) / 1000))
     if (clamped === root.textScale) return
     root.textScale = clamped
     root.persistSoon()
@@ -1728,7 +1728,7 @@ Panel {
           Button {
             text: "A+"
             foreground: root.fg
-            enabled: root.textScale < 2.0
+            enabled: root.textScale < 2.5
             tooltipText: "Bigger"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
@@ -1814,6 +1814,10 @@ Panel {
           Connections {
             target: root
             function onVersesChanged() {
+              // A new passage starts at its beginning, not wherever the last
+              // one was scrolled to.
+              scrollAnim.stop()
+              versesFlick.contentY = 0
               var now = Date.now()
               // When they're tapping through faster than the animation, drop
               // it and just show each verse — no strobing.
