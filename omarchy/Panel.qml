@@ -671,7 +671,10 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened
-    centerOnBar: true
+    // Drop the card under the bar icon, not the screen centre. KeyboardPanel
+    // then clamps it to `margin` from either screen edge, so an icon parked
+    // in a corner still opens a fully-visible card.
+    centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(580))
     contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(660))
