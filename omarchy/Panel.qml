@@ -1231,13 +1231,14 @@ Panel {
           Layout.fillWidth: true
           spacing: Style.space(6)
 
-          SearchableDropdown {
+          // Three options — a plain dropdown, not the searchable one (whose
+          // popup reserves a minimum height and looks half-empty here).
+          Dropdown {
             id: corpusDrop
             Layout.preferredWidth: Style.space(150)
             showLabel: false
             value: root.cx.label
             options: root.corpusOptions
-            placeholderText: "Corpus"
             foreground: root.fg
             accent: Color.accent
             fontFamily: root.fontFamily
@@ -1623,16 +1624,16 @@ Panel {
           Canvas {
             id: grain
             anchors.fill: parent
-            opacity: 0.55
+            opacity: 0.9
             onPaint: {
               var ctx = getContext("2d")
               ctx.clearRect(0, 0, width, height)
-              var n = Math.floor(width * height / 52)
+              var n = Math.floor(width * height / 40)
               for (var i = 0; i < n; i++) {
                 ctx.fillStyle = (i % 2)
-                  ? "rgba(0,0,0,0.055)" : "rgba(255,255,255,0.045)"
+                  ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)"
                 ctx.fillRect(Math.random() * width, Math.random() * height,
-                             Math.random() < 0.82 ? 1 : 2, 1)
+                             Math.random() < 0.8 ? 1 : 2, 1)
               }
             }
             onWidthChanged: requestPaint()
@@ -1726,9 +1727,10 @@ Panel {
                   // less air than pointed Hebrew.
                   lineHeight: root.corpus === "quran" ? 1.9
                     : root.corpus === "nt" ? 1.4 : 1.5
-                  // Keep the first line's high marks off the clipped top edge.
-                  topPadding: (root.corpus === "quran" && verseBlock.index === 0 && root.hebrewFirst)
-                    ? Math.round(8 * root.textScale) : 0
+                  // Keep the first line's high marks (Arabic tashkeel, Hebrew
+                  // te'amim) off the clipped top edge.
+                  topPadding: (verseBlock.index === 0 && root.hebrewFirst && root.corpus !== "nt")
+                    ? Math.round((root.corpus === "quran" ? 8 : 5) * root.textScale) : 0
                   wrapMode: Text.WordWrap
                 }
 
