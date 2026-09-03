@@ -992,6 +992,9 @@ Panel {
           Text {
             id: zoomLabel
             Layout.alignment: Qt.AlignVCenter
+            // Fixed width so "88%" / "100%" / "175%" don't nudge the A− / A+
+            // buttons as the number changes length.
+            Layout.preferredWidth: Style.space(38)
             horizontalAlignment: Text.AlignHCenter
             text: Math.round(root.textScale * 100) + "%"
             color: zoomHover.hovered ? root.fg : root.dim
