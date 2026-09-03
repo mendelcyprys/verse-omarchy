@@ -324,6 +324,24 @@ Panel {
     "Tanakh": "tanakh", "New Testament": "nt", "Vulgate": "vulgate", "Quran": "quran"
   })
 
+  // One layer of paper speckle. Two of these cross-fade to animate the grain.
+  component GrainSpeckle: Canvas {
+    anchors.fill: parent
+    onPaint: {
+      var ctx = getContext("2d")
+      ctx.reset()
+      var n = Math.floor(width * height / 14)
+      for (var i = 0; i < n; i++) {
+        ctx.fillStyle = (i % 2) ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.09)"
+        ctx.fillRect(Math.random() * width, Math.random() * height,
+                     Math.random() < 0.78 ? 1 : 2, 1)
+      }
+    }
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
+    Component.onCompleted: requestPaint()
+  }
+
   // A printer's ornament — a hairline broken by a small centred lozenge —
   // in place of the plain rules bracketing the passage.
   component OrnamentRule: RowLayout {
@@ -1781,36 +1799,29 @@ Panel {
           visible: root.verses.length > 0 && (root.showHebrew || root.showEnglish)
           clip: true
 
-          Canvas {
+          // Living paper: two speckle layers cross-fade into each other, and
+          // whichever one is invisible re-scatters before it fades back in —
+          // so the texture is always changing but never jumps. Rides a very
+          // slow two-axis drift. Oversized so the drift never shows an edge.
+          Item {
             id: grain
-            // Oversized so the slow drift never exposes an edge.
             anchors.fill: parent
             anchors.margins: -Style.space(12)
-            opacity: 1.0
-            onPaint: {
-              var ctx = getContext("2d")
-              ctx.clearRect(0, 0, width, height)
-              var n = Math.floor(width * height / 14)
-              for (var i = 0; i < n; i++) {
-                ctx.fillStyle = (i % 2)
-                  ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.09)"
-                ctx.fillRect(Math.random() * width, Math.random() * height,
-                             Math.random() < 0.78 ? 1 : 2, 1)
-              }
-            }
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Component.onCompleted: requestPaint()
 
-            // Film-grain boil: re-scatter the speckle a few times a second so
-            // the texture is visibly alive, over a very slow two-axis drift.
-            Timer {
-              running: grain.visible
-              interval: 260
-              repeat: true
-              onTriggered: grain.requestPaint()
-            }
+            property real phase: 0
             transform: Translate { id: grainDrift }
+
+            GrainSpeckle { id: speckleA; opacity: 1 - grain.phase }
+            GrainSpeckle { id: speckleB; opacity: grain.phase }
+
+            SequentialAnimation on phase {
+              running: grain.visible
+              loops: Animation.Infinite
+              NumberAnimation { from: 0; to: 1; duration: 4200; easing.type: Easing.InOutSine }
+              ScriptAction { script: speckleA.requestPaint() }
+              NumberAnimation { from: 1; to: 0; duration: 4200; easing.type: Easing.InOutSine }
+              ScriptAction { script: speckleB.requestPaint() }
+            }
             SequentialAnimation {
               running: grain.visible
               loops: Animation.Infinite
