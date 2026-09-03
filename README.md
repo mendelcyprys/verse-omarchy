@@ -8,20 +8,23 @@ translation, one above the other:
 |--------|----------|---------|--------|
 | **Tanakh** | Hebrew — the vocalised Masoretic text (MAM) | JPS 1917 | [Sefaria](https://www.sefaria.org) |
 | **New Testament** | Greek — the Textus Receptus | King James Version | [bolls.life](https://bolls.life) |
+| **Vulgate** | Latin — the Clementine text | Douay-Rheims | [bolls.life](https://bolls.life) |
 | **Quran** | Arabic — the Uthmani text | Pickthall (1930) | [AlQuran.cloud](https://alquran.cloud) |
 
 <table>
   <tr>
-    <td width="33%" valign="top"><img src="screenshots/corpus-tanakh.png" alt="Tanakh — Genesis 1:1"></td>
-    <td width="33%" valign="top"><img src="screenshots/corpus-nt.png" alt="New Testament — John 3:16"></td>
-    <td width="33%" valign="top"><img src="screenshots/corpus-quran.png" alt="Quran — Al-Ikhlaas 1"></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-tanakh.png" alt="Tanakh — Genesis 1:1"></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-nt.png" alt="New Testament — John 3:16"></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-vulgate.png" alt="Vulgate — John 1:1"></td>
+    <td width="25%" valign="top"><img src="screenshots/corpus-quran.png" alt="Quran — Al-Ikhlaas 1"></td>
   </tr>
 </table>
 
 ## Use
 
 - **Left-click** the widget to open the dropdown.
-- **Corpus** — the narrow dropdown at top left: Tanakh / New Testament / Quran.
+- **Corpus** — the narrow dropdown at top left: Tanakh / New Testament /
+  Vulgate / Quran.
 - **Book / Surah** — the dropdown next to it (type to filter).
 - **Chapter / Verse** (**Surah / Ayah** for the Quran) — the `‹ N ›` steppers.
   The arrows roll across borders and grey out at the ends. Click the **number**
@@ -67,7 +70,10 @@ A row of toggles under the navigation:
 
 The steppers know each book's real shape (chapters, and verses per chapter),
 so they can't run past the end — from Sefaria's `/api/shape` for the Tanakh,
-and from bundled versification tables for the New Testament and Quran.
+and from bundled versification tables for the New Testament, Vulgate and
+Quran. (The Vulgate Psalms use Septuagint numbering for the Latin, so the
+Douay-Rheims chapter is remapped on the fly — off by one through most of the
+Psalter.)
 
 The **source** credit on the bottom line is a link — it opens the passage
 you're looking at on sefaria.org / bolls.life / quran.com in your browser.
@@ -124,15 +130,17 @@ To just switch it off without deleting it: `omarchy plugin disable erikmanhem.ve
 | | *The Holy Scriptures: A New Translation* — JPS 1917 | public domain | |
 | New Testament | Textus Receptus (Greek) | public domain | `bolls.life` |
 | | King James Version | public domain | |
+| Vulgate | Clementine Vulgate (Latin) | public domain | `bolls.life` |
+| | Douay-Rheims | public domain | |
 | Quran | Uthmani text (Arabic) | public domain | `api.alquran.cloud` |
 | | Pickthall, *The Meaning of the Glorious Koran* (1930) | public domain | |
 
 - Bundled fonts, in `omarchy/fonts/` (both SIL Open Font License):
-  **Cardo** (David J. Perry) — Biblical Hebrew with full cantillation, and
-  polytonic Greek; **Amiri** (the Amiri Project) — a Naskh face for the Quran
-  with full harakat. If a file is missing Qt falls back on its own.
+  **Cardo** (David J. Perry) — Biblical Hebrew with full cantillation, plus
+  polytonic Greek and Latin; **Amiri** (the Amiri Project) — a Naskh face for
+  the Quran with full harakat. If a file is missing Qt falls back on its own.
 
-The plugin makes outbound HTTPS requests only to those three hosts. It writes
+The plugin makes outbound HTTPS requests only to those hosts. It writes
 only its own widget entry in `shell.json`, via the shell's own
 `updateEntryInline` API — no other configuration is touched.
 

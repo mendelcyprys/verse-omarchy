@@ -77,9 +77,10 @@ Panel {
   readonly property string hebrewFont: cardo.status === FontLoader.Ready ? cardo.font.family : "Noto Serif Hebrew"
   readonly property string greekFont: cardo.status === FontLoader.Ready ? cardo.font.family : "Noto Serif"
   readonly property string arabicFont: amiri.status === FontLoader.Ready ? amiri.font.family : "Noto Naskh Arabic"
-  // The script the current corpus's original text is set in.
+  // The script the current corpus's original text is set in. Cardo covers
+  // Greek and Latin as well as Hebrew.
   readonly property string nativeFont: root.corpus === "quran" ? root.arabicFont
-    : root.corpus === "nt" ? root.greekFont : root.hebrewFont
+    : (root.corpus === "nt" || root.corpus === "vulgate") ? root.greekFont : root.hebrewFont
 
   readonly property string barIcon: "\uf02d"   // nf-fa-book (Nerd Font)
 
@@ -146,6 +147,94 @@ Panel {
     "3 John": [14],
     "Jude": [25],
     "Revelation": [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 17, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21]
+  })
+  // ---- Vulgate (Clementine Latin + Douay-Rheims, via bolls.life) ----
+  // 66-book canon, bolls bookid = 1 + index. Verses-per-chapter follows
+  // the Clementine Vulgate; Psalms use Vulgate (Septuagint) numbering,
+  // so the Douay-Rheims chapter is remapped on fetch (see _drbPsalm).
+  readonly property var vulgBooks: [
+    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
+    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
+    "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
+    "Nehemiah", "Esther", "Job", "Psalms", "Proverbs",
+    "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations",
+    "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+    "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk",
+    "Zephaniah", "Haggai", "Zechariah", "Malachi", "Matthew",
+    "Mark", "Luke", "John", "Acts", "Romans",
+    "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians",
+    "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy",
+    "Titus", "Philemon", "Hebrews", "James", "1 Peter",
+    "2 Peter", "1 John", "2 John", "3 John", "Jude",
+    "Revelation"
+  ]
+  readonly property var vulgShape: ({
+    "Genesis": [31, 25, 24, 26, 31, 22, 24, 22, 29, 32, 32, 20, 18, 24, 21, 16, 27, 33, 38, 18, 34, 24, 20, 67, 34, 35, 46, 22, 35, 43, 55, 32, 20, 31, 29, 43, 36, 30, 23, 23, 57, 38, 34, 34, 28, 34, 31, 22, 32, 25],
+    "Exodus": [22, 25, 22, 31, 23, 30, 25, 32, 35, 29, 10, 51, 22, 31, 27, 36, 16, 27, 25, 26, 36, 31, 33, 18, 40, 37, 21, 43, 46, 38, 18, 35, 23, 35, 35, 38, 29, 31, 43, 36],
+    "Leviticus": [17, 16, 17, 35, 19, 30, 38, 36, 24, 20, 47, 8, 59, 57, 33, 34, 16, 30, 37, 27, 24, 33, 44, 23, 55, 45, 34],
+    "Numbers": [54, 34, 51, 49, 31, 27, 89, 26, 23, 36, 34, 15, 34, 45, 41, 50, 13, 32, 22, 30, 35, 41, 30, 25, 18, 65, 23, 31, 39, 17, 54, 42, 56, 29, 34, 13],
+    "Deuteronomy": [46, 37, 29, 49, 33, 25, 26, 20, 29, 22, 32, 32, 18, 29, 23, 22, 20, 22, 21, 20, 23, 30, 25, 22, 19, 19, 26, 68, 29, 20, 30, 52, 29, 12],
+    "Joshua": [18, 24, 17, 25, 16, 27, 26, 35, 27, 43, 23, 24, 33, 15, 63, 10, 18, 28, 51, 9, 43, 34, 16, 33],
+    "Judges": [36, 23, 31, 24, 32, 40, 25, 35, 57, 18, 40, 15, 25, 20, 20, 31, 13, 31, 30, 48, 24],
+    "Ruth": [22, 23, 18, 22],
+    "1 Samuel": [28, 36, 21, 22, 12, 21, 17, 22, 27, 27, 15, 25, 23, 52, 35, 23, 58, 30, 24, 43, 15, 23, 28, 23, 44, 25, 12, 25, 11, 31, 13],
+    "2 Samuel": [27, 32, 39, 12, 25, 23, 29, 18, 13, 19, 27, 31, 39, 33, 37, 23, 29, 33, 43, 26, 22, 51, 39, 25],
+    "1 Kings": [53, 46, 28, 34, 18, 38, 51, 66, 28, 29, 43, 33, 34, 31, 34, 34, 24, 46, 21, 43, 29, 54],
+    "2 Kings": [18, 25, 27, 44, 27, 33, 20, 29, 37, 36, 21, 21, 25, 29, 38, 20, 41, 37, 37, 21, 26, 20, 37, 20, 30],
+    "1 Chronicles": [54, 55, 24, 43, 26, 81, 40, 40, 44, 14, 46, 40, 14, 17, 29, 43, 27, 17, 19, 7, 30, 19, 32, 31, 31, 32, 34, 21, 30],
+    "2 Chronicles": [17, 18, 17, 22, 14, 42, 22, 18, 31, 19, 23, 16, 22, 15, 19, 14, 19, 34, 11, 37, 20, 12, 21, 27, 28, 23, 9, 27, 36, 27, 21, 33, 25, 33, 27, 23],
+    "Ezra": [11, 70, 13, 24, 17, 22, 28, 36, 15, 44],
+    "Nehemiah": [11, 20, 31, 23, 19, 19, 73, 18, 38, 39, 36, 46, 31],
+    "Esther": [22, 23, 15, 17, 14, 14, 10, 17, 32, 13, 12, 6, 18, 19, 19, 24],
+    "Job": [22, 13, 26, 21, 27, 30, 21, 22, 35, 22, 20, 25, 28, 22, 35, 23, 16, 21, 29, 29, 34, 30, 17, 25, 6, 14, 23, 28, 25, 31, 40, 22, 33, 37, 16, 33, 24, 41, 35, 28, 25, 16],
+    "Psalms": [6, 13, 9, 10, 13, 11, 18, 10, 39, 8, 9, 6, 7, 5, 10, 15, 51, 15, 10, 14, 32, 6, 10, 22, 12, 14, 9, 11, 13, 25, 11, 22, 23, 28, 13, 40, 23, 14, 18, 14, 12, 5, 26, 18, 12, 10, 15, 21, 23, 21, 11, 7, 9, 24, 13, 12, 12, 18, 14, 9, 13, 12, 11, 14, 20, 8, 36, 37, 6, 24, 20, 28, 23, 11, 13, 21, 72, 13, 20, 17, 8, 19, 13, 14, 17, 7, 19, 53, 17, 16, 16, 5, 23, 11, 13, 12, 9, 9, 5, 8, 29, 22, 35, 45, 48, 43, 14, 31, 7, 10, 10, 9, 26, 9, 10, 2, 29, 176, 7, 8, 9, 4, 8, 5, 6, 5, 6, 8, 8, 3, 18, 3, 3, 21, 26, 9, 8, 24, 14, 10, 8, 12, 15, 21, 10, 11, 9, 14, 9, 6],
+    "Proverbs": [33, 22, 35, 27, 23, 35, 27, 36, 18, 32, 31, 28, 25, 35, 33, 33, 28, 24, 29, 30, 31, 29, 35, 34, 28, 28, 27, 28, 27, 33, 31],
+    "Ecclesiastes": [18, 26, 22, 17, 19, 11, 30, 17, 18, 20, 10, 14],
+    "Song of Solomon": [16, 17, 11, 16, 17, 12, 13, 14],
+    "Isaiah": [31, 22, 26, 6, 30, 13, 25, 22, 21, 34, 16, 6, 22, 32, 9, 14, 14, 7, 25, 6, 17, 25, 18, 23, 12, 21, 13, 29, 24, 33, 9, 20, 24, 17, 10, 22, 38, 22, 8, 31, 29, 25, 28, 28, 25, 13, 15, 22, 26, 11, 23, 15, 12, 17, 13, 12, 21, 14, 21, 22, 11, 12, 19, 12, 25, 24],
+    "Jeremiah": [19, 37, 25, 31, 31, 30, 34, 22, 26, 25, 23, 17, 27, 22, 21, 21, 27, 23, 15, 18, 14, 30, 40, 10, 38, 24, 22, 17, 32, 24, 40, 44, 26, 22, 19, 32, 20, 28, 18, 16, 18, 22, 13, 30, 5, 28, 7, 47, 39, 46, 64, 34],
+    "Lamentations": [22, 22, 66, 22, 22],
+    "Ezekiel": [28, 9, 27, 17, 17, 14, 27, 18, 11, 22, 25, 28, 23, 23, 8, 63, 24, 32, 14, 49, 32, 31, 49, 27, 17, 21, 36, 26, 21, 26, 18, 32, 33, 31, 15, 38, 28, 23, 29, 49, 26, 20, 27, 31, 25, 24, 23, 35],
+    "Daniel": [21, 49, 100, 34, 31, 28, 28, 27, 27, 21, 45, 13, 65, 42],
+    "Hosea": [11, 24, 5, 19, 15, 11, 16, 14, 17, 15, 12, 14, 15, 10],
+    "Joel": [20, 32, 21],
+    "Amos": [15, 16, 15, 13, 27, 15, 17, 14, 15],
+    "Obadiah": [21],
+    "Jonah": [16, 11, 10, 11],
+    "Micah": [16, 13, 12, 13, 14, 16, 20],
+    "Nahum": [15, 13, 19],
+    "Habakkuk": [17, 20, 19],
+    "Zephaniah": [18, 15, 20],
+    "Haggai": [14, 24],
+    "Zechariah": [21, 13, 10, 14, 11, 15, 14, 23, 17, 12, 17, 14, 9, 21],
+    "Malachi": [14, 17, 18, 6],
+    "Matthew": [25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 26, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20],
+    "Mark": [45, 28, 35, 40, 43, 56, 37, 39, 49, 52, 33, 44, 37, 72, 47, 20],
+    "Luke": [80, 52, 38, 44, 39, 49, 50, 56, 62, 42, 54, 59, 35, 35, 32, 31, 37, 43, 48, 47, 38, 71, 56, 53],
+    "John": [51, 25, 36, 54, 47, 72, 53, 59, 41, 42, 56, 50, 38, 31, 27, 33, 26, 40, 42, 31, 25],
+    "Acts": [26, 47, 26, 37, 42, 15, 59, 40, 43, 48, 30, 25, 52, 27, 41, 40, 34, 28, 40, 38, 40, 30, 35, 27, 27, 32, 44, 31],
+    "Romans": [32, 29, 31, 25, 21, 23, 25, 39, 33, 21, 36, 21, 14, 23, 33, 27],
+    "1 Corinthians": [31, 16, 23, 21, 13, 20, 40, 13, 27, 33, 34, 31, 13, 40, 58, 24],
+    "2 Corinthians": [23, 17, 18, 18, 21, 18, 16, 24, 15, 18, 33, 21, 13],
+    "Galatians": [24, 21, 29, 31, 26, 18],
+    "Ephesians": [23, 22, 21, 32, 33, 24],
+    "Philippians": [30, 30, 21, 23],
+    "Colossians": [29, 23, 25, 18],
+    "1 Thessalonians": [10, 20, 13, 18, 28],
+    "2 Thessalonians": [12, 17, 18],
+    "1 Timothy": [20, 15, 16, 16, 25, 21],
+    "2 Timothy": [18, 26, 17, 22],
+    "Titus": [16, 15, 15],
+    "Philemon": [25],
+    "Hebrews": [14, 18, 19, 16, 14, 20, 28, 13, 28, 39, 40, 29, 25],
+    "James": [27, 26, 18, 17, 20],
+    "1 Peter": [25, 25, 22, 19, 14],
+    "2 Peter": [21, 22, 18],
+    "1 John": [10, 29, 24, 21, 21],
+    "2 John": [13],
+    "3 John": [14],
+    "Jude": [25],
+    "Revelation": [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 18, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21]
   })
 
   // ---- Quran (Uthmani + Pickthall, via api.alquran.cloud) ----
@@ -216,6 +305,12 @@ Panel {
       "hasTrop": false, "hasVowels": false, "vowelLabel": "",
       "c1": "Textus Receptus", "c2": "KJV (public domain)", "host": "bolls.life"
     },
+    "vulgate": {
+      "label": "Vulgate", "defaultRef": "Genesis 1:1", "books": root.vulgBooks,
+      "nativeLabel": "Latin", "rtl": false, "unit": "chapter", "sub": "verse",
+      "hasTrop": false, "hasVowels": false, "vowelLabel": "",
+      "c1": "Clementine Vulgate", "c2": "Douay-Rheims (public domain)", "host": "bolls.life"
+    },
     "quran": {
       "label": "Quran", "defaultRef": "Quran 1:1", "books": root.surahNames,
       "nativeLabel": "Arabic", "rtl": true, "unit": "surah", "sub": "ayah",
@@ -224,8 +319,10 @@ Panel {
     }
   })
   readonly property var cx: root._corpora[root.corpus] || root._corpora["tanakh"]
-  readonly property var corpusOptions: ["Tanakh", "New Testament", "Quran"]
-  readonly property var _corpusKey: ({ "Tanakh": "tanakh", "New Testament": "nt", "Quran": "quran" })
+  readonly property var corpusOptions: ["Tanakh", "New Testament", "Vulgate", "Quran"]
+  readonly property var _corpusKey: ({
+    "Tanakh": "tanakh", "New Testament": "nt", "Vulgate": "vulgate", "Quran": "quran"
+  })
 
   // A printer's ornament — a hairline broken by a small centred lozenge —
   // in place of the plain rules bracketing the passage.
@@ -260,12 +357,17 @@ Panel {
     return name + " " + p.vStart
   }
 
+  // The bundled verses-per-chapter table for the current corpus, if it has
+  // one (NT, Vulgate); the Quran and Tanakh are handled separately.
+  function _bundledShape(book) {
+    if (root.corpus === "nt") return root.ntShape[book]
+    if (root.corpus === "vulgate") return root.vulgShape[book]
+    return null
+  }
   function chapCount(book) {
     if (root.corpus === "quran") return 114
-    if (root.corpus === "nt") {
-      var t = root.ntShape[book]
-      return (t && t.length) ? t.length : 1
-    }
+    var t = root._bundledShape(book)
+    if (t) return t.length || 1
     var sh = root._shapes[book]
     if (sh && sh.length) return sh.length
     return root.chapterCounts[book] || 150
@@ -273,10 +375,8 @@ Panel {
   function verseCount(book, chap) {
     if (root.corpus === "quran")
       return (chap >= 1 && chap <= 114) ? root.surahAyahs[chap - 1] : 0
-    if (root.corpus === "nt") {
-      var t = root.ntShape[book]
-      return (t && chap >= 1 && chap <= t.length) ? t[chap - 1] : 0
-    }
+    var t = root._bundledShape(book)
+    if (t) return (chap >= 1 && chap <= t.length) ? t[chap - 1] : 0
     var sh = root._shapes[book]
     return (sh && chap >= 1 && chap <= sh.length) ? sh[chap - 1] : 0
   }
@@ -299,6 +399,7 @@ Panel {
     if (!p) return false
     if (corpus === "quran") return p.book === "Quran" && p.chap >= 1 && p.chap <= 114
     if (corpus === "nt") return root.ntBooks.indexOf(p.book) >= 0
+    if (corpus === "vulgate") return root.vulgBooks.indexOf(p.book) >= 0
     return root.books.indexOf(p.book) >= 0
   }
 
@@ -542,7 +643,7 @@ Panel {
   // instant. Hebrew: te'amim + niqqud. Arabic: tashkeel. Greek: nothing.
   function renderHe(raw) {
     var t = root.stripHtml(raw)
-    if (root.corpus === "nt") return t
+    if (root.corpus === "nt" || root.corpus === "vulgate") return t
     if (root.corpus === "quran") {
       // Arabic harakat + Quranic annotation signs.
       if (!root.heNiqqud)
@@ -571,11 +672,28 @@ Panel {
     }
   }
 
-  // Parse a fetch response into the common entry shape, per corpus. `reqRef`
-  // is the reference that was asked for — the NT / Quran APIs don't echo a
-  // canonical ref the way Sefaria does.
-  function buildEntryFor(data, reqRef) {
-    if (root.corpus === "nt") return root._buildEntryNT(data, reqRef)
+  // Parse a raw fetch response into the common entry shape, per corpus.
+  // `reqRef` is the reference asked for — the bolls / AlQuran APIs don't
+  // echo a canonical ref the way Sefaria does. Takes the raw text so a
+  // corpus can use its own wire format (the Vulgate Psalms path glues two
+  // chapter responses together with a separator, which isn't JSON).
+  function buildEntryFor(rawText, reqRef) {
+    var t = String(rawText || "").trim()
+    if (t === "") return { "error": "No answer from " + root._sourceName + "." }
+
+    var p = root.refToParts(reqRef)
+    if (root.corpus === "vulgate" && p && p.book === "Psalms") {
+      var halves = t.split("<<SEP>>")   // written between the two --next fetches
+      if (halves.length < 2) return { "error": "Couldn't read the Psalm from bolls.life." }
+      try {
+        return root._buildEntryBolls([JSON.parse(halves[0]), JSON.parse(halves[1])], reqRef)
+      } catch (e1) { return { "error": "Couldn't read the Psalm from bolls.life." } }
+    }
+
+    var data
+    try { data = JSON.parse(t) }
+    catch (e) { return { "error": "Could not read the reply from " + root._sourceName + "." } }
+    if (root.corpus === "nt" || root.corpus === "vulgate") return root._buildEntryBolls(data, reqRef)
     if (root.corpus === "quran") return root._buildEntryQuran(data, reqRef)
     return root.buildEntry(data)
   }
@@ -598,17 +716,32 @@ Panel {
     return root._entry(he, en, startVerse, String(data.ref || ""), String(data.heRef || ""))
   }
 
-  // bolls.life /get-paralel-verses/ -> [ [TR verses…], [KJV verses…] ].
-  function _buildEntryNT(data, reqRef) {
+  // bolls responses -> [ [original verses…], [English verses…] ]. NT and most
+  // of the Vulgate come from /get-paralel-verses/ (only the requested verses);
+  // Vulgate Psalms come as two whole-chapter /get-text/ arrays wrapped in one
+  // JSON array (the numbering differs, so the DRB chapter is fetched
+  // separately). Either way: pair the two sides up by verse number and keep
+  // only what the reference asked for.
+  readonly property string _bollsEnglish: root.corpus === "vulgate" ? "DRB" : "KJV"
+  function _buildEntryBolls(data, reqRef) {
     if (!Array.isArray(data) || data.length < 2) return { "error": "Nothing here for that reference." }
     var a = data[0] || [], b = data[1] || []
-    var greek = a, eng = b
-    if (a.length && a[0] && a[0].translation === "KJV") { greek = b; eng = a }
-    var he = greek.map(function (x) { return String(x.text || "") })
-    var en = eng.map(function (x) { return root.stripBolls(String(x.text || "")) })
+    var orig = a, eng = b
+    if (a.length && a[0] && a[0].translation === root._bollsEnglish) { orig = b; eng = a }
+
     var p = root.refToParts(reqRef)
-    var startVerse = (greek[0] && greek[0].verse) || (eng[0] && eng[0].verse) || (p ? p.vStart : 1)
-    return root._entry(he, en, startVerse, reqRef, "")
+    var lo = p ? p.vStart : 1
+    var hi = (p && p.vEnd !== 0) ? p.vEnd : 100000
+    function collect(arr) {
+      var by = {}
+      for (var i = 0; i < arr.length; i++) by[arr[i].verse] = root.stripBolls(String(arr[i].text || ""))
+      var res = []
+      for (var v = lo; v <= hi; v++) { if (by[v] === undefined) break; res.push(by[v]) }
+      return res
+    }
+    var he = collect(orig), en = collect(eng)
+    if (he.length === 0 && en.length === 0) return { "error": "Nothing here for that reference." }
+    return root._entry(he, en, lo, reqRef, "")
   }
 
   // api.alquran.cloud: whole surah -> data.data = [ed, ed] each with .ayahs;
@@ -660,15 +793,16 @@ Panel {
 
   // The reader page for a reference on the corpus's own site.
   //   Tanakh -> sefaria.org/Song_of_Songs.3.2   NT -> bolls.life/KJV/43/3/#16
-  //   Quran  -> quran.com/2/255
+  //   Vulgate -> bolls.life/DRB/1/1/           Quran -> quran.com/2/255
   function sourceUrl(reference) {
     var p = root.refToParts(reference)
     if (root.corpus === "quran")
       return p ? ("https://quran.com/" + p.chap + "/" + p.vStart) : "https://quran.com"
-    if (root.corpus === "nt") {
-      if (!p) return "https://bolls.life/KJV/"
-      var id = root._ntBookId(p.book)
-      return "https://bolls.life/KJV/" + id + "/" + p.chap + "/" + (p.vEnd !== 0 ? "#" + p.vStart : "")
+    if (root.corpus === "nt" || root.corpus === "vulgate") {
+      var tr = root._bollsEnglish
+      if (!p) return "https://bolls.life/" + tr + "/"
+      return "https://bolls.life/" + tr + "/" + root._bollsBookId(p.book) + "/" + p.chap + "/"
+        + (p.vEnd !== 0 ? "#" + p.vStart : "")
     }
     if (!p) return "https://www.sefaria.org/texts/Tanakh"
     var seg = p.book.replace(/ /g, "_") + "." + p.chap
@@ -688,14 +822,43 @@ Panel {
   }
 
   // ---- load -----------------------------------------------
-  function _ntBookId(book) {
+  // bolls.life book id. NT books sit at 40-66; the Vulgate spans 1-66.
+  function _bollsBookId(book) {
+    if (root.corpus === "vulgate") {
+      var vi = root.vulgBooks.indexOf(book)
+      return vi >= 0 ? vi + 1 : 1
+    }
     var i = root.ntBooks.indexOf(book)
     return i >= 0 ? 40 + i : 40
   }
 
+  // The Vulgate (Septuagint) Psalm number → the Douay-Rheims (Masoretic) one
+  // bolls serves it under. Off by one through most of the Psalter; the few
+  // split/merge psalms land on their first Masoretic half.
+  function _drbPsalm(v) {
+    if (v <= 8) return v
+    if (v === 9) return 9
+    if (v <= 112) return v + 1
+    if (v === 113) return 114
+    if (v === 114 || v === 115) return 116
+    if (v <= 145) return v + 1
+    if (v === 146 || v === 147) return 147
+    return v
+  }
+
   function curlFor(reference) {
     var p = root.refToParts(reference)
-    if (root.corpus === "nt") {
+
+    // Vulgate Psalms: the Latin and the Douay-Rheims are numbered differently,
+    // so fetch each chapter on its own and wrap the two arrays as one JSON.
+    if (root.corpus === "vulgate" && p && p.book === "Psalms") {
+      var uV = "https://bolls.life/get-text/VULG/19/" + p.chap + "/"
+      var uD = "https://bolls.life/get-text/DRB/19/" + root._drbPsalm(p.chap) + "/"
+      return ["curl", "-fsS", "--max-time", "12", uV,
+        "-w", "<<SEP>>", "--next", "-fsS", "--max-time", "12", uD]
+    }
+
+    if (root.corpus === "nt" || root.corpus === "vulgate") {
       var vs = []
       if (p && p.vEnd === 0) {
         var n = root.verseCount(p.book, p.chap) || 60
@@ -703,9 +866,10 @@ Panel {
       } else if (p) {
         for (var v = p.vStart; v <= p.vEnd; v++) vs.push(v)
       }
+      var pair = root.corpus === "vulgate" ? ["VULG", "DRB"] : ["TR", "KJV"]
       var body = JSON.stringify({
-        "translations": ["TR", "KJV"], "verses": vs,
-        "book": root._ntBookId(p ? p.book : "Matthew"), "chapter": p ? p.chap : 1
+        "translations": pair, "verses": vs,
+        "book": root._bollsBookId(p ? p.book : root.cx.books[0]), "chapter": p ? p.chap : 1
       })
       return ["curl", "-fsSL", "--max-time", "12", "-X", "POST",
         "https://bolls.life/get-paralel-verses/",
@@ -791,11 +955,13 @@ Panel {
   readonly property int _randomPoolTarget: 4
 
   // A random ref inside the current corpus. Tanakh uses Sefaria's random
-  // endpoint (async, elsewhere); NT and Quran we can pick locally.
+  // endpoint (async, elsewhere); the rest we can pick locally from a table.
   function localRandomRef() {
-    if (root.corpus === "nt") {
-      var b = root.ntBooks[Math.floor(Math.random() * root.ntBooks.length)]
-      var t = root.ntShape[b]
+    if (root.corpus === "nt" || root.corpus === "vulgate") {
+      var list = root.corpus === "vulgate" ? root.vulgBooks : root.ntBooks
+      var table = root.corpus === "vulgate" ? root.vulgShape : root.ntShape
+      var b = list[Math.floor(Math.random() * list.length)]
+      var t = table[b]
       var c = 1 + Math.floor(Math.random() * t.length)
       var v = 1 + Math.floor(Math.random() * t[c - 1])
       return b + " " + c + ":" + v
@@ -925,12 +1091,7 @@ Panel {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
-        var t = String(text || "").trim()
-        if (t === "") { root.loading = false; root.errorText = "No answer from " + root._sourceName + "."; return }
-        var data
-        try { data = JSON.parse(t) }
-        catch (e) { root.loading = false; root.errorText = "Could not read the reply from " + root._sourceName + "."; return }
-        var entry = root.buildEntryFor(data, root.pendingRef)
+        var entry = root.buildEntryFor(text, root.pendingRef)
         if (entry.error) { root.loading = false; root.errorText = String(entry.error); return }
         if (entry.he.length === 0 && entry.en.length === 0) {
           root.loading = false; root.errorText = "Nothing here for that reference."; return
@@ -959,8 +1120,7 @@ Panel {
       waitForEnd: true
       onStreamFinished: {
         try {
-          var d = JSON.parse(String(text || "").trim())
-          var e = root.buildEntryFor(d, root._prefetchActive)
+          var e = root.buildEntryFor(text, root._prefetchActive)
           if (e && !e.error && (e.he.length > 0 || e.en.length > 0)) {
             root.cachePut(root._prefetchActive, e)
             if (e.loadedRef) root.cachePut(e.loadedRef, e)
@@ -1628,7 +1788,7 @@ Panel {
             onPaint: {
               var ctx = getContext("2d")
               ctx.clearRect(0, 0, width, height)
-              var n = Math.floor(width * height / 40)
+              var n = Math.floor(width * height / 20)
               for (var i = 0; i < n; i++) {
                 ctx.fillStyle = (i % 2)
                   ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)"
@@ -1723,13 +1883,14 @@ Panel {
                   font.family: root.nativeFont
                   font.pixelSize: Math.round(Style.font.display * root.textScale)
                   horizontalAlignment: root.cx.rtl ? Text.AlignRight : Text.AlignLeft
-                  // Arabic tashkeel reaches well above the line; Greek needs
-                  // less air than pointed Hebrew.
+                  // Arabic tashkeel reaches well above the line; Greek and
+                  // Latin need less air than pointed Hebrew.
                   lineHeight: root.corpus === "quran" ? 1.9
-                    : root.corpus === "nt" ? 1.4 : 1.5
+                    : (root.corpus === "nt" || root.corpus === "vulgate") ? 1.4 : 1.5
                   // Keep the first line's high marks (Arabic tashkeel, Hebrew
                   // te'amim) off the clipped top edge.
-                  topPadding: (verseBlock.index === 0 && root.hebrewFirst && root.corpus !== "nt")
+                  topPadding: (verseBlock.index === 0 && root.hebrewFirst
+                    && (root.corpus === "quran" || root.corpus === "tanakh"))
                     ? Math.round((root.corpus === "quran" ? 8 : 5) * root.textScale) : 0
                   wrapMode: Text.WordWrap
                 }
