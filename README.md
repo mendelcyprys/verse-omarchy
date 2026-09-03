@@ -13,6 +13,8 @@ reference and see it in **Hebrew** (the vocalised Masoretic text) and the
 - **Chapter / Verse** — the `‹ N ›` steppers. The arrows roll across chapter
   borders and grey out at the start of Genesis / end of Chronicles.
 - **Random** — a random passage from the Tanakh.
+- **‹ Back** — return to the passage you were reading before the last jump;
+  it keeps a history, so you can step back through several.
 - **Middle-click** the bar widget for a random verse without opening it first.
 - **Right-click** the bar widget to toggle whether the current reference is
   shown next to the icon in the bar.
@@ -31,6 +33,7 @@ a pile of requests.
 | `j` / `k`  (or `↑` / `↓`) | **scroll** a long passage |
 | `[` / `]`  (or `H` / `L`) | previous / next **chapter** |
 | `r` | random passage |
+| `b` | back to the previous passage |
 | `s` | swap which script sits on top |
 | `−` / `+` | text smaller / bigger |
 | `0` | reset text size to 100% |
