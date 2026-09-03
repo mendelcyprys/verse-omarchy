@@ -69,10 +69,16 @@ stored.
 Verse takes its colours and fonts from the current Omarchy theme — light or
 dark — so the dropdown always sits with the rest of the desktop.
 
-| | |
-|:---:|:---:|
-| ![Everforest](screenshots/everforest.jpg) | ![Gruvbox](screenshots/gruvbox.jpg) |
-| ![Tokyo Night](screenshots/tokyo-night.jpg) | ![Rose Pine](screenshots/rose-pine.jpg) |
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/everforest.jpg" alt="Everforest"><br><sub>Everforest</sub></td>
+    <td align="center"><img src="screenshots/gruvbox.jpg" alt="Gruvbox"><br><sub>Gruvbox</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/tokyo-night.jpg" alt="Tokyo Night"><br><sub>Tokyo Night</sub></td>
+    <td align="center"><img src="screenshots/rose-pine.jpg" alt="Rose Pine"><br><sub>Rose Pine</sub></td>
+  </tr>
+</table>
 
 ## Install
 
