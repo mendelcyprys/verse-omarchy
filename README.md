@@ -64,6 +64,16 @@ widget's entry in `~/.config/omarchy/shell.json`, so the next time you open
 it — or restart the shell — you land back where you were. Nothing else is
 stored.
 
+## Theming
+
+Verse takes its colours and fonts from the current Omarchy theme — light or
+dark — so the dropdown always sits with the rest of the desktop.
+
+| | |
+|:---:|:---:|
+| ![Everforest](screenshots/everforest.jpg) | ![Gruvbox](screenshots/gruvbox.jpg) |
+| ![Tokyo Night](screenshots/tokyo-night.jpg) | ![Rose Pine](screenshots/rose-pine.jpg) |
+
 ## Install
 
 ```bash
