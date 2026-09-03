@@ -56,6 +56,8 @@ Panel {
   property var _randomPool: []                // ref strings, pre-cached
   property int _randomTries: 0                // capped per prefetch cycle
   property double _lastSwapAt: 0              // for the passage-change animation
+  property var _history: []                   // back-stack of user-visited refs
+  property bool _restoringHistory: false      // set while a Back navigation resolves
 
   readonly property color fg: root.bar ? root.bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.5)
@@ -121,6 +123,7 @@ Panel {
   readonly property bool canPrevChap: !root.loading && !!root._navParts && root._navParts.chap > 1
   readonly property bool canNextChap: root.shapeRev >= 0 && !root.loading && !!root._navParts
     && root._navParts.chap < root.chapCount(root._navParts.book)
+  readonly property bool canGoBack: root._history.length > 0 && !root.loading
 
   // ---- settings -------------------------------------------------
   function loadSettings() {
@@ -370,10 +373,21 @@ Panel {
 
   function applyEntry(entry, remember, requestedRef) {
     root.loading = false
+    var newRef = entry.loadedRef || requestedRef
+    // Push the passage we're leaving onto the back-stack, unless this load
+    // *is* a Back navigation (or the very first one).
+    if (root._restoringHistory) {
+      root._restoringHistory = false
+    } else if (root.loadedRef !== "" && root.normKey(root.loadedRef) !== root.normKey(newRef)) {
+      var h = root._history.slice()
+      h.push(root.loadedRef)
+      while (h.length > 50) h.shift()
+      root._history = h
+    }
     root.errorText = entry.count > 120
       ? ("Showing the first 120 of " + entry.count + " verses.") : ""
     root.verses = root.buildRows(entry.he, entry.en, entry.startVerse)
-    root.loadedRef = entry.loadedRef || requestedRef
+    root.loadedRef = newRef
     root.loadedHeRef = entry.heRef
     root.ref = root.loadedRef
     root.syncMenuFrom(root.loadedRef)
@@ -684,6 +698,7 @@ Panel {
       }
       onTextKey: function(t) {
         if (t === "r" || t === "R") root.loadRandom()
+        else if (t === "b" || t === "B") root.goBack()
         else if (t === "s" || t === "S") {
           if (root.showHebrew && root.showEnglish) { root.hebrewFirst = !root.hebrewFirst; root.persistSoon() }
         }
@@ -709,66 +724,75 @@ Panel {
         anchors.top: parent.top
         spacing: Style.space(10)
 
-        // ---- header
+        // ---- header: English reference on the left, Hebrew on the right,
+        // matched in size, weight and colour, no fade. The activity indicator
+        // sits centred between them while a passage loads.
         RowLayout {
           Layout.fillWidth: true
           spacing: Style.space(8)
 
           Text {
             id: headerRef
-            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            Layout.maximumWidth: Style.space(230)
             textFormat: Text.PlainText
             text: root.loadedRef !== "" ? root.loadedRef : "Verse"
             color: root.fg
             font.family: root.fontFamily
-            font.pixelSize: Style.font.title
+            font.pixelSize: Style.font.subtitle
             font.bold: true
             elide: Text.ElideRight
-            transform: Translate { id: headerShift }
-
-            Connections {
-              target: root
-              function onLoadedRefChanged() {
-                if (root.loadedRef !== "") headerAnim.restart()
-              }
-            }
-            SequentialAnimation {
-              id: headerAnim
-              PropertyAction { target: headerRef; property: "opacity"; value: 0.15 }
-              PropertyAction { target: headerShift; property: "x"; value: Style.space(-6) }
-              ParallelAnimation {
-                NumberAnimation { target: headerRef; property: "opacity"; to: 1; duration: 260; easing.type: Easing.OutCubic }
-                NumberAnimation { target: headerShift; property: "x"; to: 0; duration: 260; easing.type: Easing.OutCubic }
-              }
-            }
           }
 
-          // Quiet activity spinner — content stays put underneath while it turns.
-          Text {
+          // Loading indicator: three accent dots breathing in sequence,
+          // centred between the two references. Subtle; nothing below shifts.
+          Item {
+            Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            textFormat: Text.PlainText
-            opacity: root.loading ? 0.9 : 0
-            visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: 180 } }
-            text: "\uf1ce"                               // nf-fa-circle_o_notch
-            color: Color.accent
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.body
-            RotationAnimator on rotation {
-              running: root.loading
-              loops: Animation.Infinite
-              from: 0; to: 360
-              duration: 750
+            implicitHeight: Style.space(6)
+
+            Row {
+              anchors.centerIn: parent
+              spacing: Style.space(4)
+              opacity: root.loading ? 1 : 0
+              visible: opacity > 0.01
+              Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+
+              Repeater {
+                model: 3
+                delegate: Rectangle {
+                  id: dot
+                  required property int index
+                  width: Style.space(5)
+                  height: Style.space(5)
+                  radius: width / 2
+                  color: Color.accent
+                  opacity: 0.25
+                  SequentialAnimation on opacity {
+                    running: root.loading
+                    loops: Animation.Infinite
+                    PauseAnimation { duration: dot.index * 150 }
+                    NumberAnimation { from: 0.25; to: 0.95; duration: 400; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 0.95; to: 0.25; duration: 400; easing.type: Easing.InOutSine }
+                    PauseAnimation { duration: (2 - dot.index) * 150 }
+                  }
+                }
+              }
             }
           }
 
           Text {
+            id: headerHeRef
+            Layout.alignment: Qt.AlignVCenter
+            Layout.maximumWidth: Style.space(230)
             visible: root.loadedHeRef !== ""
             textFormat: Text.PlainText
             text: root.loadedHeRef
-            color: root.dim
+            color: root.fg
             font.family: root.hebrewFont
             font.pixelSize: Style.font.subtitle
+            font.bold: true
+            elide: Text.ElideRight
           }
         }
 
@@ -895,6 +919,20 @@ Panel {
           Item { Layout.fillWidth: true }
 
           Button {
+            text: "‹ Back"
+            foreground: root.fg
+            enabled: root.canGoBack
+            opacity: enabled ? 1.0 : 0.25
+            tooltipText: "Return to the previous passage  (b)"
+            fontFamily: root.fontFamily
+            fontSize: Style.font.caption
+            horizontalPadding: Style.spacing.controlPaddingX
+            verticalPadding: Style.spacing.controlPaddingY
+            onClicked: root.goBack()
+            Behavior on opacity { NumberAnimation { duration: 140 } }
+          }
+
+          Button {
             text: "Random"
             foreground: root.fg
             enabled: !root.loading
@@ -911,7 +949,7 @@ Panel {
           Layout.fillWidth: true
           horizontalAlignment: Text.AlignHCenter
           textFormat: Text.PlainText
-          text: "h l  verse     j k  scroll     [ ]  chapter     r  random     s  swap"
+          text: "h l  verse    j k  scroll    [ ]  chapter    r  random    b  back    s  swap"
           color: Qt.darker(root.fg, 2.4)
           font.family: root.fontFamily
           font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -1213,5 +1251,16 @@ Panel {
     var target = root.stepRef(root.loadedRef !== "" ? root.loadedRef : root.ref, delta)
     if (!target) return
     root.load(target, true)
+  }
+
+  // Pop the back-stack and reload that passage. `_restoringHistory` keeps
+  // `applyEntry` from pushing the passage we're leaving back onto the stack.
+  function goBack() {
+    if (root.loading || root._history.length === 0) return
+    var h = root._history.slice()
+    var prev = h.pop()
+    root._history = h
+    root._restoringHistory = true
+    root.load(prev, true)
   }
 }
