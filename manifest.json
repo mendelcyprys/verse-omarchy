@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "erikmanhem.verse",
+  "name": "Verse",
+  "version": "1.0.0",
+  "author": "Erik Manhem",
+  "license": "MIT",
+  "description": "Pick a Tanakh reference and read it in Hebrew and the JPS 1917 translation, in a dropdown from the bar.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "omarchy/Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Verse",
+    "description": "Type a reference (e.g. Genesis 1:1) and read it in Hebrew + JPS 1917.",
+    "category": "Info",
+    "allowMultiple": false,
+    "defaultSection": "center",
+    "defaults": {
+      "ref": "Genesis 1:1",
+      "showRefInBar": false
+    }
+  }
+}
