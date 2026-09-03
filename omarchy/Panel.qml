@@ -359,6 +359,28 @@ Panel {
     }
   }
 
+  // The sefaria.org reader page for a reference — "Song of Songs 3:2" ->
+  // https://www.sefaria.org/Song_of_Songs.3.2 (a verse range keeps its dash,
+  // a whole chapter drops the verse segment).
+  function sefariaUrl(reference) {
+    var p = root.refToParts(reference)
+    if (!p) return "https://www.sefaria.org/texts/Tanakh"
+    var seg = p.book.replace(/ /g, "_") + "." + p.chap
+    if (p.vEnd !== 0) {
+      seg += "." + p.vStart
+      if (p.vEnd > p.vStart) seg += "-" + p.vEnd
+    }
+    return "https://www.sefaria.org/" + encodeURI(seg)
+  }
+
+  // Open the current passage on sefaria.org in the default browser. Routed
+  // through a login shell (like Omarchy's own Util.execArgv) so xdg-open
+  // inherits the session PATH; `exec "$@"` keeps the URL a literal arg.
+  function openSefaria() {
+    var url = root.sefariaUrl(root.loadedRef !== "" ? root.loadedRef : root.ref)
+    Quickshell.execDetached(["bash", "-lc", 'exec "$@"', "bash", "xdg-open", url])
+  }
+
   // ---- load -----------------------------------------------
   function curlFor(reference) {
     return ["curl", "-fsSL", "--max-time", "12", "-G",
@@ -1271,16 +1293,52 @@ Panel {
 
         PanelSeparator { Layout.fillWidth: true; foreground: root.fg }
 
-        Text {
+        RowLayout {
           Layout.fillWidth: true
-          textFormat: Text.PlainText
-          maximumLineCount: 1
-          elide: Text.ElideRight
-          text: "MAM (CC BY-SA)      JPS 1917 (public domain)      sefaria.org"
-          color: Qt.darker(root.fg, 2.4)
-          font.family: root.fontFamily
-          font.pixelSize: Math.round(Style.font.caption * 0.9)
-          font.letterSpacing: 0.3
+          spacing: Style.space(16)
+
+          Text {
+            textFormat: Text.PlainText
+            text: "MAM (CC BY-SA)"
+            color: Qt.darker(root.fg, 2.4)
+            font.family: root.fontFamily
+            font.pixelSize: Math.round(Style.font.caption * 0.9)
+            font.letterSpacing: 0.3
+            elide: Text.ElideRight
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            text: "JPS 1917 (public domain)"
+            color: Qt.darker(root.fg, 2.4)
+            font.family: root.fontFamily
+            font.pixelSize: Math.round(Style.font.caption * 0.9)
+            font.letterSpacing: 0.3
+            elide: Text.ElideRight
+          }
+
+          // Opens the current passage on sefaria.org in the browser.
+          Text {
+            id: sefariaLink
+            textFormat: Text.PlainText
+            text: "sefaria.org"
+            color: sefariaLinkHover.hovered ? root.fg : Qt.darker(root.fg, 1.9)
+            font.family: root.fontFamily
+            font.pixelSize: Math.round(Style.font.caption * 0.9)
+            font.letterSpacing: 0.3
+            font.underline: sefariaLinkHover.hovered
+
+            HoverHandler { id: sefariaLinkHover; cursorShape: Qt.PointingHandCursor }
+            TapHandler { onTapped: root.openSefaria() }
+            PanelToolTip {
+              visible: sefariaLinkHover.hovered
+              text: "Open this passage on sefaria.org"
+              panelForeground: root.fg
+              fontFamily: root.fontFamily
+            }
+          }
+
+          Item { Layout.fillWidth: true }
         }
       }
     }

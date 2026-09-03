@@ -55,6 +55,10 @@ The chapter and verse steppers know each book's real shape (how many
 chapters, and how many verses in the current chapter), pulled from Sefaria's
 `/api/shape`, so they can't run past the end.
 
+The **sefaria.org** credit on the bottom line is a link — it opens the
+passage you're looking at on [sefaria.org](https://www.sefaria.org) in your
+browser.
+
 The last reference you viewed and all display settings are saved to this
 widget's entry in `~/.config/omarchy/shell.json`, so the next time you open
 it — or restart the shell — you land back where you were. Nothing else is
