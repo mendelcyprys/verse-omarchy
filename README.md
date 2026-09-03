@@ -1,31 +1,43 @@
 # Verse
 
-An Omarchy bar widget that drops down a small reader for the Tanakh: pick a
-reference and see it in **Hebrew** (the vocalised Masoretic text) and the
-**JPS 1917** English translation, one above the other.
+An Omarchy bar widget that drops down a small scripture reader. Pick a
+passage and see it in the original language alongside a public-domain English
+translation, one above the other:
 
-![The dropdown showing Genesis 1:1](preview.png)
+| Corpus | Original | English | Source |
+|--------|----------|---------|--------|
+| **Tanakh** | Hebrew — the vocalised Masoretic text (MAM) | JPS 1917 | [Sefaria](https://www.sefaria.org) |
+| **New Testament** | Greek — the Textus Receptus | King James Version | [bolls.life](https://bolls.life) |
+| **Quran** | Arabic — the Uthmani text | Pickthall (1930) | [AlQuran.cloud](https://alquran.cloud) |
+
+<table>
+  <tr>
+    <td width="33%" valign="top"><img src="screenshots/corpus-tanakh.png" alt="Tanakh — Genesis 1:1"></td>
+    <td width="33%" valign="top"><img src="screenshots/corpus-nt.png" alt="New Testament — John 3:16"></td>
+    <td width="33%" valign="top"><img src="screenshots/corpus-quran.png" alt="Quran — Al-Ikhlaas 1"></td>
+  </tr>
+</table>
 
 ## Use
 
 - **Left-click** the widget to open the dropdown.
-- **Book** — the dropdown at the top (type to filter the 39 books).
-- **Chapter / Verse** — the `‹ N ›` steppers. The arrows roll across chapter
-  borders and grey out at the start of Genesis / end of Chronicles. Click the
-  **number** itself to jump back to chapter 1 / verse 1 (only when you're not
-  already there).
-- **Random** — a random passage from the Tanakh.
+- **Corpus** — the narrow dropdown at top left: Tanakh / New Testament / Quran.
+- **Book / Surah** — the dropdown next to it (type to filter).
+- **Chapter / Verse** (**Surah / Ayah** for the Quran) — the `‹ N ›` steppers.
+  The arrows roll across borders and grey out at the ends. Click the **number**
+  itself to jump back to 1 (when you're not already there).
+- **Random** — a random passage from the current corpus.
 - **‹ Back** — return to the passage you were reading before the last jump;
   it keeps a history, so you can step back through several.
-- **Middle-click** the bar widget for a random verse without opening it first.
+- **Middle-click** the bar widget for a random passage without opening it first.
 - **Right-click** the bar widget to toggle whether the current reference is
   shown next to the icon in the bar.
 
-The verses either side of where you are (and a little into the neighbouring
+The passages either side of where you are (and a little into the neighbouring
 chapters), plus a small pool of random passages, are fetched in the
 background, so moving around is normally instant. The controls disable
-themselves while a verse is actually loading, so mashing them can't queue up
-a pile of requests.
+themselves while a passage is actually loading, so mashing them can't queue
+up a pile of requests. Switching corpus starts each context fresh.
 
 ### Keyboard (with the panel focused)
 
@@ -45,21 +57,21 @@ a pile of requests.
 
 A row of toggles under the navigation:
 
-- **Hebrew** / **English** — show each independently (or neither).
+- **Hebrew / Greek / Arabic** and **English** — show each independently (or
+  neither). The label follows the corpus.
 - **⇅** — swap which one sits on top (only when both are shown).
-- **Trop** — cantillation marks (te'amim) on/off.
-- **Niqqud** — vowel points on/off.
+- **Trop** — Hebrew cantillation marks (te'amim) on/off. Tanakh only.
+- **Niqqud / Tashkeel** — vowel points on/off. Tanakh and Quran.
 - **A− / A+** — text size, 75%–200%. Click the **percentage** to reset to 100%.
 
-The chapter and verse steppers know each book's real shape (how many
-chapters, and how many verses in the current chapter), pulled from Sefaria's
-`/api/shape`, so they can't run past the end.
+The steppers know each book's real shape (chapters, and verses per chapter),
+so they can't run past the end — from Sefaria's `/api/shape` for the Tanakh,
+and from bundled versification tables for the New Testament and Quran.
 
-The **sefaria.org** credit on the bottom line is a link — it opens the
-passage you're looking at on [sefaria.org](https://www.sefaria.org) in your
-browser.
+The **source** credit on the bottom line is a link — it opens the passage
+you're looking at on sefaria.org / bolls.life / quran.com in your browser.
 
-The last reference you viewed and all display settings are saved to this
+The corpus, last reference and all display settings are saved to this
 widget's entry in `~/.config/omarchy/shell.json`, so the next time you open
 it — or restart the shell — you land back where you were. Nothing else is
 stored.
@@ -102,17 +114,24 @@ To just switch it off without deleting it: `omarchy plugin disable erikmanhem.ve
 
 ## Requirements & data
 
-- `curl` and an internet connection. Text is fetched live from the
-  [Sefaria](https://www.sefaria.org) API each time you open or navigate; there
-  is no bundled corpus.
-  - **Hebrew** — *Miqra according to the Masorah*, licensed CC-BY-SA.
-  - **English** — *The Holy Scriptures: A New Translation* (JPS 1917), public
-    domain.
-- The Hebrew is set in **Cardo** (David J. Perry), an OFL book face with
-  complete Biblical Hebrew, bundled in `omarchy/fonts/` (licence in
-  `omarchy/fonts/OFL.txt`). If the file is missing Qt falls back on its own.
+- `curl` and an internet connection. Every passage is fetched live when you
+  open or navigate; there is no bundled corpus.
 
-The plugin makes outbound HTTPS requests only to `www.sefaria.org`. It writes
+| | Text | Licence | Fetched from |
+|--|------|---------|--------------|
+| Tanakh | *Miqra according to the Masorah* (Hebrew) | CC BY-SA | `www.sefaria.org` |
+| | *The Holy Scriptures: A New Translation* — JPS 1917 | public domain | |
+| New Testament | Textus Receptus (Greek) | public domain | `bolls.life` |
+| | King James Version | public domain | |
+| Quran | Uthmani text (Arabic) | public domain | `api.alquran.cloud` |
+| | Pickthall, *The Meaning of the Glorious Koran* (1930) | public domain | |
+
+- Bundled fonts, in `omarchy/fonts/` (both SIL Open Font License):
+  **Cardo** (David J. Perry) — Biblical Hebrew with full cantillation, and
+  polytonic Greek; **Amiri** (the Amiri Project) — a Naskh face for the Quran
+  with full harakat. If a file is missing Qt falls back on its own.
+
+The plugin makes outbound HTTPS requests only to those three hosts. It writes
 only its own widget entry in `shell.json`, via the shell's own
 `updateEntryInline` API — no other configuration is touched.
 
@@ -123,6 +142,7 @@ Bar-widget QML changes don't always hot-reload cleanly; after editing
 
 ## License
 
-MIT for the plugin code — see [`LICENSE`](LICENSE). The bundled Cardo font is
-under the SIL Open Font License (`omarchy/fonts/OFL.txt`); the scripture texts
-are under their own licences as noted above.
+MIT for the plugin code — see [`LICENSE`](LICENSE). The bundled fonts are
+under the SIL Open Font License (`omarchy/fonts/OFL.txt` for Cardo,
+`omarchy/fonts/OFL-Amiri.txt` for Amiri); the scripture texts are under their
+own licences as noted above.

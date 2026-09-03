@@ -5,12 +5,16 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// Bar widget: pick a Tanakh reference and read it in Hebrew alongside the
-// public-domain JPS 1917 translation.
+// Bar widget: pick a reference and read it in the original language alongside
+// a public-domain English translation. Three corpora, each its own source:
 //
-// The text belongs to Sefaria's API, not to this widget. What's kept is the
-// last reference you looked at and your display preferences, in this widget's
-// shell.json entry, so the next open lands where you left off.
+//   Tanakh          Hebrew (MAM) + JPS 1917      Sefaria    sefaria.org
+//   New Testament   Greek (Textus Receptus) + KJV bolls.life bolls.life
+//   Quran           Arabic (Uthmani) + Pickthall  AlQuran    alquran.cloud
+//
+// None of the text belongs to this widget. What's kept is the corpus and
+// last reference you looked at plus your display preferences, in this
+// widget's shell.json entry, so the next open lands where you left off.
 //
 // Neighbouring verses and a pool of random passages are fetched in the
 // background and cached, so Prev / Next / Random are usually instant.
@@ -20,6 +24,7 @@ Panel {
   ipcTarget: "erikmanhem.verse"
 
   // ---- reference + result state -------------------------------------
+  property string corpus: "tanakh"           // "tanakh" | "nt" | "quran"
   property string ref: "Genesis 1:1"
   property string loadedRef: ""
   property string loadedHeRef: ""
@@ -63,11 +68,17 @@ Panel {
   readonly property color dim: Qt.darker(fg, 1.5)
   readonly property string fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
 
-  // Cardo: an OFL book face with complete Biblical Hebrew — full cantillation
-  // and vocalisation. Bundled with the plugin; Qt falls back on its own if
-  // the file is ever missing.
+  // Cardo: an OFL book face with complete Biblical Hebrew (full cantillation
+  // and vocalisation) and polytonic Greek. Amiri: an OFL Naskh face for the
+  // Quran, full harakat. Both bundled; Qt falls back on its own if missing.
   FontLoader { id: cardo; source: Qt.resolvedUrl("fonts/Cardo-Regular.ttf") }
+  FontLoader { id: amiri; source: Qt.resolvedUrl("fonts/Amiri-Regular.ttf") }
   readonly property string hebrewFont: cardo.status === FontLoader.Ready ? cardo.font.family : "Noto Serif Hebrew"
+  readonly property string greekFont: cardo.status === FontLoader.Ready ? cardo.font.family : "Noto Serif"
+  readonly property string arabicFont: amiri.status === FontLoader.Ready ? amiri.font.family : "Noto Naskh Arabic"
+  // The script the current corpus's original text is set in.
+  readonly property string nativeFont: root.corpus === "quran" ? root.arabicFont
+    : root.corpus === "nt" ? root.greekFont : root.hebrewFont
 
   readonly property string barIcon: "\uf02d"   // nf-fa-book (Nerd Font)
 
@@ -96,22 +107,160 @@ Panel {
     "I Chronicles": 29, "II Chronicles": 36
   })
 
+  // ---- New Testament (Textus Receptus Greek + KJV, via bolls.life) ----
+  readonly property var ntBooks: [
+    "Matthew", "Mark", "Luke", "John", "Acts",
+    "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+    "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy",
+    "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
+    "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
+    "Jude", "Revelation"
+  ]
+  // Verses per chapter (KJV versification). bolls bookid = 40 + index.
+  readonly property var ntShape: ({
+    "Matthew": [25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 27, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20],
+    "Mark": [45, 28, 35, 41, 43, 56, 37, 38, 50, 52, 33, 44, 37, 72, 47, 20],
+    "Luke": [80, 52, 38, 44, 39, 49, 50, 56, 62, 42, 54, 59, 35, 35, 32, 31, 37, 43, 48, 47, 38, 71, 56, 53],
+    "John": [51, 25, 36, 54, 47, 71, 53, 59, 41, 42, 57, 50, 38, 31, 27, 33, 26, 40, 42, 31, 25],
+    "Acts": [26, 47, 26, 37, 42, 15, 60, 40, 43, 48, 30, 25, 52, 28, 41, 40, 34, 28, 41, 38, 40, 30, 35, 27, 27, 32, 44, 31],
+    "Romans": [32, 29, 31, 25, 21, 23, 25, 39, 33, 21, 36, 21, 14, 23, 33, 27],
+    "1 Corinthians": [31, 16, 23, 21, 13, 20, 40, 13, 27, 33, 34, 31, 13, 40, 58, 24],
+    "2 Corinthians": [24, 17, 18, 18, 21, 18, 16, 24, 15, 18, 33, 21, 14],
+    "Galatians": [24, 21, 29, 31, 26, 18],
+    "Ephesians": [23, 22, 21, 32, 33, 24],
+    "Philippians": [30, 30, 21, 23],
+    "Colossians": [29, 23, 25, 18],
+    "1 Thessalonians": [10, 20, 13, 18, 28],
+    "2 Thessalonians": [12, 17, 18],
+    "1 Timothy": [20, 15, 16, 16, 25, 21],
+    "2 Timothy": [18, 26, 17, 22],
+    "Titus": [16, 15, 15],
+    "Philemon": [25],
+    "Hebrews": [14, 18, 19, 16, 14, 20, 28, 13, 28, 39, 40, 29, 25],
+    "James": [27, 26, 18, 17, 20],
+    "1 Peter": [25, 25, 22, 19, 14],
+    "2 Peter": [21, 22, 18],
+    "1 John": [10, 29, 24, 21, 21],
+    "2 John": [13],
+    "3 John": [14],
+    "Jude": [25],
+    "Revelation": [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 17, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21]
+  })
+
+  // ---- Quran (Uthmani + Pickthall, via api.alquran.cloud) ----
+  readonly property var surahNames: [
+    "Al-Faatiha", "Al-Baqara", "Aal-i-Imraan", "An-Nisaa", "Al-Maaida", "Al-An'aam",
+    "Al-A'raaf", "Al-Anfaal", "At-Tawba", "Yunus", "Hud", "Yusuf",
+    "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Israa", "Al-Kahf",
+    "Maryam", "Taa-Haa", "Al-Anbiyaa", "Al-Hajj", "Al-Muminoon", "An-Noor",
+    "Al-Furqaan", "Ash-Shu'araa", "An-Naml", "Al-Qasas", "Al-Ankaboot", "Ar-Room",
+    "Luqman", "As-Sajda", "Al-Ahzaab", "Saba", "Faatir", "Yaseen",
+    "As-Saaffaat", "Saad", "Az-Zumar", "Ghafir", "Fussilat", "Ash-Shura",
+    "Az-Zukhruf", "Ad-Dukhaan", "Al-Jaathiya", "Al-Ahqaf", "Muhammad", "Al-Fath",
+    "Al-Hujuraat", "Qaaf", "Adh-Dhaariyat", "At-Tur", "An-Najm", "Al-Qamar",
+    "Ar-Rahmaan", "Al-Waaqia", "Al-Hadid", "Al-Mujaadila", "Al-Hashr", "Al-Mumtahana",
+    "As-Saff", "Al-Jumu'a", "Al-Munaafiqoon", "At-Taghaabun", "At-Talaaq", "At-Tahrim",
+    "Al-Mulk", "Al-Qalam", "Al-Haaqqa", "Al-Ma'aarij", "Nooh", "Al-Jinn",
+    "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyaama", "Al-Insaan", "Al-Mursalaat", "An-Naba",
+    "An-Naazi'aat", "Abasa", "At-Takwir", "Al-Infitaar", "Al-Mutaffifin", "Al-Inshiqaaq",
+    "Al-Burooj", "At-Taariq", "Al-A'laa", "Al-Ghaashiya", "Al-Fajr", "Al-Balad",
+    "Ash-Shams", "Al-Lail", "Ad-Dhuhaa", "Ash-Sharh", "At-Tin", "Al-Alaq",
+    "Al-Qadr", "Al-Bayyina", "Az-Zalzala", "Al-Aadiyaat", "Al-Qaari'a", "At-Takaathur",
+    "Al-Asr", "Al-Humaza", "Al-Fil", "Quraish", "Al-Maa'un", "Al-Kawthar",
+    "Al-Kaafiroon", "An-Nasr", "Al-Masad", "Al-Ikhlaas", "Al-Falaq", "An-Naas"
+  ]
+  readonly property var surahAr: [
+    "ٱلْفَاتِحَةِ", "البَقَرَةِ", "آلِ عِمۡرَانَ", "النِّسَاءِ", "المَائـِدَةِ", "الأَنۡعَامِ",
+    "الأَعۡرَافِ", "الأَنفَالِ", "التَّوۡبَةِ", "يُونُسَ", "هُودٍ", "يُوسُفَ",
+    "الرَّعۡدِ", "إِبۡرَاهِيمَ", "الحِجۡرِ", "النَّحۡلِ", "الإِسۡرَاءِ", "الكَهۡفِ",
+    "مَرۡيَمَ", "طه", "الأَنبِيَاءِ", "الحَجِّ", "المُؤۡمِنُونَ", "النُّورِ",
+    "الفُرۡقَانِ", "الشُّعَرَاءِ", "النَّمۡلِ", "القَصَصِ", "العَنكَبُوتِ", "الرُّومِ",
+    "لُقۡمَانَ", "السَّجۡدَةِ", "الأَحۡزَابِ", "سَبَإٍ", "فَاطِرٍ", "يسٓ",
+    "الصَّافَّاتِ", "صٓ", "الزُّمَرِ", "غَافِرٍ", "فُصِّلَتۡ", "الشُّورَىٰ",
+    "الزُّخۡرُفِ", "الدُّخَانِ", "الجَاثِيَةِ", "الأَحۡقَافِ", "مُحَمَّدٍ", "الفَتۡحِ",
+    "الحُجُرَاتِ", "قٓ", "الذَّارِيَاتِ", "الطُّورِ", "النَّجۡمِ", "القَمَرِ",
+    "الرَّحۡمَٰن", "الوَاقِعَةِ", "الحَدِيدِ", "المُجَادلَةِ", "الحَشۡرِ", "المُمۡتَحنَةِ",
+    "الصَّفِّ", "الجُمُعَةِ", "المُنَافِقُونَ", "التَّغَابُنِ", "الطَّلَاقِ", "التَّحۡرِيمِ",
+    "المُلۡكِ", "القَلَمِ", "الحَاقَّةِ", "المَعَارِجِ", "نُوحٍ", "الجِنِّ",
+    "المُزَّمِّلِ", "المُدَّثِّرِ", "القِيَامَةِ", "الإِنسَانِ", "المُرۡسَلَاتِ", "النَّبَإِ",
+    "النَّازِعَاتِ", "عَبَسَ", "التَّكۡوِيرِ", "الانفِطَارِ", "المُطَفِّفِينَ", "الانشِقَاقِ",
+    "البُرُوجِ", "الطَّارِقِ", "الأَعۡلَىٰ", "الغَاشِيَةِ", "الفَجۡرِ", "البَلَدِ",
+    "الشَّمۡسِ", "اللَّيۡلِ", "الضُّحَىٰ", "الشَّرۡحِ", "التِّينِ", "العَلَقِ",
+    "القَدۡرِ", "البَيِّنَةِ", "الزَّلۡزَلَةِ", "العَادِيَاتِ", "القَارِعَةِ", "التَّكَاثُرِ",
+    "العَصۡرِ", "الهُمَزَةِ", "الفِيلِ", "قُرَيۡشٍ", "المَاعُونِ", "الكَوۡثَرِ",
+    "الكَافِرُونَ", "النَّصۡرِ", "المَسَدِ", "الإِخۡلَاصِ", "الفَلَقِ", "النَّاسِ"
+  ]
+  readonly property var surahAyahs: [
+    7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110,
+    98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83,
+    182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55,
+    78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28,
+    20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20,
+    15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3,
+    6, 3, 5, 4, 5, 6
+  ]
+
+  // ---- corpus config -------------------------------------------------
+  // Per-corpus constants the UI and fetch layer read through `cx`.
+  readonly property var _corpora: ({
+    "tanakh": {
+      "label": "Tanakh", "defaultRef": "Genesis 1:1", "books": root.books,
+      "nativeLabel": "Hebrew", "rtl": true, "unit": "chapter", "sub": "verse",
+      "hasTrop": true, "hasVowels": true, "vowelLabel": "Niqqud",
+      "c1": "MAM (CC BY-SA)", "c2": "JPS 1917 (public domain)", "host": "sefaria.org"
+    },
+    "nt": {
+      "label": "New Testament", "defaultRef": "John 3:16", "books": root.ntBooks,
+      "nativeLabel": "Greek", "rtl": false, "unit": "chapter", "sub": "verse",
+      "hasTrop": false, "hasVowels": false, "vowelLabel": "",
+      "c1": "Textus Receptus", "c2": "KJV (public domain)", "host": "bolls.life"
+    },
+    "quran": {
+      "label": "Quran", "defaultRef": "Quran 1:1", "books": root.surahNames,
+      "nativeLabel": "Arabic", "rtl": true, "unit": "surah", "sub": "ayah",
+      "hasTrop": false, "hasVowels": true, "vowelLabel": "Tashkeel",
+      "c1": "Uthmani", "c2": "Pickthall (public domain)", "host": "alquran.cloud"
+    }
+  })
+  readonly property var cx: root._corpora[root.corpus] || root._corpora["tanakh"]
+  readonly property var corpusOptions: ["Tanakh", "New Testament", "Quran"]
+  readonly property var _corpusKey: ({ "Tanakh": "tanakh", "New Testament": "nt", "Quran": "quran" })
+
+  // The "book" segment a bare ref carries in the current corpus. For the Quran
+  // every ref is "Quran S:A", so the surah lives in the chapter slot.
+  readonly property string _navBook: root.corpus === "quran"
+    ? "Quran" : (root._navParts ? root._navParts.book : bookDrop.value)
+
+  // The loaded reference as a human would name it — "Quran 2:255" reads as
+  // "Al-Baqara 255"; the rest are already fine.
+  readonly property string displayRef: {
+    if (root.loadedRef === "") return ""
+    if (root.corpus !== "quran") return root.loadedRef
+    var p = root.refToParts(root.loadedRef)
+    if (!p) return root.loadedRef
+    var name = (p.chap >= 1 && p.chap <= 114) ? root.surahNames[p.chap - 1] : "Quran"
+    return name + " " + p.vStart
+  }
+
   function chapCount(book) {
+    if (root.corpus === "quran") return 114
+    if (root.corpus === "nt") {
+      var t = root.ntShape[book]
+      return (t && t.length) ? t.length : 1
+    }
     var sh = root._shapes[book]
     if (sh && sh.length) return sh.length
     return root.chapterCounts[book] || 150
   }
   function verseCount(book, chap) {
+    if (root.corpus === "quran")
+      return (chap >= 1 && chap <= 114) ? root.surahAyahs[chap - 1] : 0
+    if (root.corpus === "nt") {
+      var t = root.ntShape[book]
+      return (t && chap >= 1 && chap <= t.length) ? t[chap - 1] : 0
+    }
     var sh = root._shapes[book]
     return (sh && chap >= 1 && chap <= sh.length) ? sh[chap - 1] : 0
-  }
-
-  // Bound maxima for the steppers. `shapeRev` is threaded through so the
-  // binding re-runs when a shape lands.
-  readonly property int chapMax: root.shapeRev >= 0 ? root.chapCount(bookDrop.value) : 150
-  readonly property int verseMax: {
-    var n = root.shapeRev >= 0 ? root.verseCount(bookDrop.value, root.selChap) : 0
-    return n > 0 ? n : 176
   }
 
   // What Prev / Next / the chapter arrows can do right now — drives both the
@@ -125,12 +274,23 @@ Panel {
     && root._navParts.chap < root.chapCount(root._navParts.book)
   readonly property bool canGoBack: root._history.length > 0 && !root.loading
 
+  // A ref that belongs to `corpus` — "Book C:V" in that corpus's book list
+  // (for the Quran, "Quran S:A" with S in 1..114).
+  function validRef(corpus, ref) {
+    var p = root.refToParts(ref)
+    if (!p) return false
+    if (corpus === "quran") return p.book === "Quran" && p.chap >= 1 && p.chap <= 114
+    if (corpus === "nt") return root.ntBooks.indexOf(p.book) >= 0
+    return root.books.indexOf(p.book) >= 0
+  }
+
   // ---- settings -------------------------------------------------
   function loadSettings() {
     var s = root.settings || ({})
+    if (s.corpus && root._corpora[s.corpus]) root.corpus = String(s.corpus)
     if (s.ref) root.ref = String(s.ref)
-    // A stale non-Tanakh ref (e.g. a bad older random) shouldn't strand us.
-    if (root.plainTanakhRef(root.ref) === "") root.ref = "Genesis 1:1"
+    // A stale / wrong-corpus ref shouldn't strand us.
+    if (!root.validRef(root.corpus, root.ref)) root.ref = root.cx.defaultRef
     if (s.showRefInBar !== undefined) root.showRefInBar = s.showRefInBar !== false
     if (s.showHebrew !== undefined) root.showHebrew = s.showHebrew !== false
     if (s.showEnglish !== undefined) root.showEnglish = s.showEnglish !== false
@@ -145,6 +305,7 @@ Panel {
 
   function persistSettings() {
     var next = {
+      corpus: root.corpus,
       ref: root.ref,
       showRefInBar: root.showRefInBar,
       showHebrew: root.showHebrew,
@@ -243,34 +404,51 @@ Panel {
     return book + " " + chap + ":" + v
   }
 
+  // The bare-ref book segment for a menu selection. Tanakh/NT: the book name
+  // itself. Quran: the dropdown shows surah names but every ref is "Quran S:A".
+  function _bookForRef(sel) {
+    if (root.corpus === "quran") return "Quran"
+    return sel
+  }
+  // The chapter number a menu selection maps to (Quran: the surah's number).
+  function _chapForSelection(sel) {
+    if (root.corpus === "quran") {
+      var i = root.surahNames.indexOf(sel)
+      return i >= 0 ? i + 1 : 1
+    }
+    return 1
+  }
+
   function syncMenuFrom(reference) {
     var p = root.refToParts(reference)
     if (!p) return
     root.syncingMenu = true
-    if (root.books.indexOf(p.book) !== -1) bookDrop.value = p.book
+    if (root.corpus === "quran") {
+      if (p.chap >= 1 && p.chap <= 114) bookDrop.value = root.surahNames[p.chap - 1]
+    } else if (root.cx.books.indexOf(p.book) !== -1) {
+      bookDrop.value = p.book
+    }
     root.selChap = p.chap
     root.selVerse = p.vStart
     root.syncingMenu = false
   }
 
-  // Jump to a chapter (verse 1). Clamped; no-op past a book's ends.
+  // Jump to a chapter / surah (verse 1). Clamped; no-op past the ends.
   function goToChapter(chap) {
     if (root.loading) return
-    var book = (root._navParts ? root._navParts.book : bookDrop.value)
+    var book = root._navBook
     var c = Math.max(1, Math.min(root.chapCount(book), chap))
     if (root._navParts && c === root._navParts.chap) return
     root.load(book + " " + c + ":1", true)
   }
   function stepChapter(delta) { root.goToChapter((root._navParts ? root._navParts.chap : root.selChap) + delta) }
 
-  // Back to verse 1 of the chapter we're already in — the verse-number tap
-  // target (goToChapter's same-chapter guard would swallow this).
+  // Back to verse 1 of the chapter/surah we're already in — the verse-number
+  // tap target (goToChapter's same-chapter guard would swallow this).
   function goToVerseOne() {
     if (root.loading) return
-    var p = root._navParts
-    var book = p ? p.book : bookDrop.value
-    var chap = p ? p.chap : root.selChap
-    root.load(book + " " + chap + ":1", true)
+    var chap = root._navParts ? root._navParts.chap : root.selChap
+    root.load(root._navBook + " " + chap + ":1", true)
   }
 
   function scrollVerses(dir) {
@@ -300,10 +478,38 @@ Panel {
       .trim()
   }
 
-  // Hebrew as it should currently render: strip cantillation and/or vowels
-  // per the toggles. Kept out of the model so flipping a toggle is instant.
+  // bolls.life KJV carries <S>NNNN</S> Strong's tags and <i>…</i> italics.
+  function stripBolls(s) {
+    return root.stripHtml(String(s || "").replace(/<S>\d+<\/S>/g, "").replace(/<\/?i>/g, ""))
+  }
+
+  // The Uthmani edition prepends the 4-word Basmala to ayah 1 of every surah
+  // but 1 & 9, where the English edition doesn't — drop those four words so
+  // the two columns line up. (Its combining-mark order isn't stable enough to
+  // match as a literal string.)
+  function stripBasmala(s, surah) {
+    var t = String(s || "").replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, "").trim()
+    if (surah === 1 || surah === 9) return t
+    var w = t.split(/\s+/)
+    return w.length > 4 ? w.slice(4).join(" ") : t
+  }
+
+  function _arabicNum(n) {
+    return String(n).replace(/[0-9]/g, function (d) { return String.fromCharCode(0x0660 + parseInt(d, 10)) })
+  }
+
+  // The original-language text as it should currently render: strip the
+  // pointing the toggles say to hide. Kept out of the model so a toggle is
+  // instant. Hebrew: te'amim + niqqud. Arabic: tashkeel. Greek: nothing.
   function renderHe(raw) {
     var t = root.stripHtml(raw)
+    if (root.corpus === "nt") return t
+    if (root.corpus === "quran") {
+      // Arabic harakat + Quranic annotation signs.
+      if (!root.heNiqqud)
+        t = t.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u08D3-\u08FF]/g, "")
+      return t
+    }
     if (!root.heTaamim) t = t.replace(/[֑-֯]/g, "")
     if (!root.heNiqqud) t = t.replace(/[ְ-ׇֽֿׁׂׅׄ]/g, "")
     return t
@@ -318,9 +524,28 @@ Panel {
     return out
   }
 
+  function _entry(he, en, startVerse, loadedRef, heRef) {
+    return {
+      "he": he, "en": en, "startVerse": startVerse,
+      "loadedRef": loadedRef, "heRef": heRef,
+      "count": Math.max(he.length, en.length)
+    }
+  }
+
+  // Parse a fetch response into the common entry shape, per corpus. `reqRef`
+  // is the reference that was asked for — the NT / Quran APIs don't echo a
+  // canonical ref the way Sefaria does.
+  function buildEntryFor(data, reqRef) {
+    if (root.corpus === "nt") return root._buildEntryNT(data, reqRef)
+    if (root.corpus === "quran") return root._buildEntryQuran(data, reqRef)
+    return root.buildEntry(data)
+  }
+
+  // Sefaria API v3.
   function buildEntry(data) {
+    if (data && data.error) return { "error": String(data.error) }
     var he = [], en = []
-    var list = data.versions || []
+    var list = (data && data.versions) || []
     for (var i = 0; i < list.length; i++) {
       var v = list[i]
       if (v.language === "he" || v.actualLanguage === "he") he = root.flatten(v.text, [])
@@ -331,11 +556,46 @@ Panel {
       var n = parseInt(data.sections[data.sections.length - 1], 10)
       if (!isNaN(n)) startVerse = n
     }
-    return {
-      "he": he, "en": en, "startVerse": startVerse,
-      "loadedRef": String(data.ref || ""), "heRef": String(data.heRef || ""),
-      "count": Math.max(he.length, en.length)
+    return root._entry(he, en, startVerse, String(data.ref || ""), String(data.heRef || ""))
+  }
+
+  // bolls.life /get-paralel-verses/ -> [ [TR verses…], [KJV verses…] ].
+  function _buildEntryNT(data, reqRef) {
+    if (!Array.isArray(data) || data.length < 2) return { "error": "Nothing here for that reference." }
+    var a = data[0] || [], b = data[1] || []
+    var greek = a, eng = b
+    if (a.length && a[0] && a[0].translation === "KJV") { greek = b; eng = a }
+    var he = greek.map(function (x) { return String(x.text || "") })
+    var en = eng.map(function (x) { return root.stripBolls(String(x.text || "")) })
+    var p = root.refToParts(reqRef)
+    var startVerse = (greek[0] && greek[0].verse) || (eng[0] && eng[0].verse) || (p ? p.vStart : 1)
+    return root._entry(he, en, startVerse, reqRef, "")
+  }
+
+  // api.alquran.cloud: whole surah -> data.data = [ed, ed] each with .ayahs;
+  // single ayah -> data.data = [ed, ed] each a bare ayah object.
+  function _buildEntryQuran(data, reqRef) {
+    var eds = (data && data.data) || []
+    if (data && data.status && data.status !== "OK") return { "error": String(data.status) }
+    if (eds.length < 2) return { "error": "Nothing here for that reference." }
+    var ar = eds[0], tr = eds[1]
+    if (ar.edition && String(ar.edition.identifier || "").indexOf("uthmani") < 0) { ar = eds[1]; tr = eds[0] }
+    var p = root.refToParts(reqRef)
+    var surah = p ? p.chap : 1
+    var he = [], en = [], startVerse = p ? p.vStart : 1
+    if (Array.isArray(ar.ayahs)) {                 // whole surah
+      he = ar.ayahs.map(function (x) { return String(x.text || "") })
+      en = tr.ayahs.map(function (x) { return String(x.text || "") })
+      startVerse = (ar.ayahs[0] && ar.ayahs[0].numberInSurah) || 1
+    } else {                                       // single ayah
+      he = [String(ar.text || "")]
+      en = [String(tr.text || "")]
+      startVerse = ar.numberInSurah || startVerse
     }
+    if (startVerse === 1 && he.length) he[0] = root.stripBasmala(he[0], surah)
+    var heRef = (surah >= 1 && surah <= 114)
+      ? (root.surahAr[surah - 1] + " " + root._arabicNum(startVerse)) : ""
+    return root._entry(he, en, startVerse, reqRef, heRef)
   }
 
   function buildRows(he, en, startVerse) {
@@ -359,11 +619,18 @@ Panel {
     }
   }
 
-  // The sefaria.org reader page for a reference — "Song of Songs 3:2" ->
-  // https://www.sefaria.org/Song_of_Songs.3.2 (a verse range keeps its dash,
-  // a whole chapter drops the verse segment).
-  function sefariaUrl(reference) {
+  // The reader page for a reference on the corpus's own site.
+  //   Tanakh -> sefaria.org/Song_of_Songs.3.2   NT -> bolls.life/KJV/43/3/#16
+  //   Quran  -> quran.com/2/255
+  function sourceUrl(reference) {
     var p = root.refToParts(reference)
+    if (root.corpus === "quran")
+      return p ? ("https://quran.com/" + p.chap + "/" + p.vStart) : "https://quran.com"
+    if (root.corpus === "nt") {
+      if (!p) return "https://bolls.life/KJV/"
+      var id = root._ntBookId(p.book)
+      return "https://bolls.life/KJV/" + id + "/" + p.chap + "/" + (p.vEnd !== 0 ? "#" + p.vStart : "")
+    }
     if (!p) return "https://www.sefaria.org/texts/Tanakh"
     var seg = p.book.replace(/ /g, "_") + "." + p.chap
     if (p.vEnd !== 0) {
@@ -373,20 +640,71 @@ Panel {
     return "https://www.sefaria.org/" + encodeURI(seg)
   }
 
-  // Open the current passage on sefaria.org in the default browser. Routed
+  // Open the current passage on the source site in the default browser. Routed
   // through a login shell (like Omarchy's own Util.execArgv) so xdg-open
   // inherits the session PATH; `exec "$@"` keeps the URL a literal arg.
-  function openSefaria() {
-    var url = root.sefariaUrl(root.loadedRef !== "" ? root.loadedRef : root.ref)
+  function openSource() {
+    var url = root.sourceUrl(root.loadedRef !== "" ? root.loadedRef : root.ref)
     Quickshell.execDetached(["bash", "-lc", 'exec "$@"', "bash", "xdg-open", url])
   }
 
   // ---- load -----------------------------------------------
+  function _ntBookId(book) {
+    var i = root.ntBooks.indexOf(book)
+    return i >= 0 ? 40 + i : 40
+  }
+
   function curlFor(reference) {
+    var p = root.refToParts(reference)
+    if (root.corpus === "nt") {
+      var vs = []
+      if (p && p.vEnd === 0) {
+        var n = root.verseCount(p.book, p.chap) || 60
+        for (var i = 1; i <= n; i++) vs.push(i)
+      } else if (p) {
+        for (var v = p.vStart; v <= p.vEnd; v++) vs.push(v)
+      }
+      var body = JSON.stringify({
+        "translations": ["TR", "KJV"], "verses": vs,
+        "book": root._ntBookId(p ? p.book : "Matthew"), "chapter": p ? p.chap : 1
+      })
+      return ["curl", "-fsSL", "--max-time", "12", "-X", "POST",
+        "https://bolls.life/get-paralel-verses/",
+        "-H", "Content-Type: application/json", "-d", body]
+    }
+    if (root.corpus === "quran") {
+      var eds = "quran-uthmani,en.pickthall"
+      if (p && p.vEnd === 0)
+        return ["curl", "-fsSL", "--max-time", "12",
+          "https://api.alquran.cloud/v1/surah/" + p.chap + "/editions/" + eds]
+      return ["curl", "-fsSL", "--max-time", "12",
+        "https://api.alquran.cloud/v1/ayah/" + (p ? p.chap : 1) + ":" + (p ? p.vStart : 1)
+          + "/editions/" + eds]
+    }
     return ["curl", "-fsSL", "--max-time", "12", "-G",
       "https://www.sefaria.org/api/v3/texts/" + encodeURIComponent(reference),
       "--data-urlencode", "version=" + root.englishVersion,
       "--data-urlencode", "version=hebrew"]
+  }
+
+  // Switch corpus. Every per-corpus cache is context — clear it all, land on
+  // that corpus's default reference, and start fresh.
+  function setCorpus(key) {
+    if (key === root.corpus || !root._corpora[key]) return
+    root.flushPersist()
+    if (fetchProc.running) fetchProc.running = false
+    root._cache = ({}); root._cacheOrder = []
+    root._shapes = ({}); root._shapePending = ({}); root._shapeQueue = []; root._shapeActive = ""
+    root._prefetchQueue = []; root._prefetchActive = ""
+    root._randomPool = []; root._randomTries = 0
+    root._history = []; root._restoringHistory = false
+    root.verses = []
+    root.loadedRef = ""; root.loadedHeRef = ""; root.pendingRef = ""; root.errorText = ""
+    root.corpus = key
+    root.ref = root.cx.defaultRef
+    root.syncMenuFrom(root.ref)
+    root.load(root.ref, true)
+    randomFillTimer.restart()
   }
 
   function load(reference, remember) {
@@ -417,7 +735,7 @@ Panel {
       root._history = h
     }
     root.errorText = entry.count > 120
-      ? ("Showing the first 120 of " + entry.count + " verses.") : ""
+      ? ("Showing the first 120 of " + entry.count + " " + root.cx.sub + "s.") : ""
     root.verses = root.buildRows(entry.he, entry.en, entry.startVerse)
     root.loadedRef = newRef
     root.loadedHeRef = entry.heRef
@@ -430,15 +748,35 @@ Panel {
 
   readonly property int _randomPoolTarget: 4
 
+  // A random ref inside the current corpus. Tanakh uses Sefaria's random
+  // endpoint (async, elsewhere); NT and Quran we can pick locally.
+  function localRandomRef() {
+    if (root.corpus === "nt") {
+      var b = root.ntBooks[Math.floor(Math.random() * root.ntBooks.length)]
+      var t = root.ntShape[b]
+      var c = 1 + Math.floor(Math.random() * t.length)
+      var v = 1 + Math.floor(Math.random() * t[c - 1])
+      return b + " " + c + ":" + v
+    }
+    if (root.corpus === "quran") {
+      var s = 1 + Math.floor(Math.random() * 114)
+      var a = 1 + Math.floor(Math.random() * root.surahAyahs[s - 1])
+      return "Quran " + s + ":" + a
+    }
+    return ""
+  }
+
   function loadRandom() {
     if (root.loading) return
     root._randomTries = 0
     if (root._randomPool.length > 0) {
       root.load(root._randomPool.shift(), true)
-    } else {
+    } else if (root.corpus === "tanakh") {
       root.loading = true
       root.errorText = ""
       randomNowProc.running = true
+    } else {
+      root.load(root.localRandomRef(), true)
     }
     // Refill straight away so the next Random is ready, not just eventually.
     randomFillTimer.restart()
@@ -446,12 +784,27 @@ Panel {
 
   function fillRandomPool() {
     if (root._randomPool.length >= root._randomPoolTarget) return
-    if (randomRefProc.running || root._randomTries >= 8) return
-    randomRefProc.running = true
+    if (root.corpus === "tanakh") {
+      if (randomRefProc.running || root._randomTries >= 8) return
+      randomRefProc.running = true
+      return
+    }
+    // NT / Quran: fill locally, and queue each for a content prefetch.
+    var guard = 0
+    while (root._randomPool.length < root._randomPoolTarget && guard++ < 20) {
+      var rr = root.localRandomRef()
+      if (rr === "" || root._randomPool.indexOf(rr) >= 0) continue
+      root._randomPool.push(rr)
+      if (!root._cache[root.normKey(rr)] && root._prefetchQueue.indexOf(rr) < 0)
+        root._prefetchQueue.push(rr)
+    }
+    root.pumpPrefetch()
   }
 
   // ---- shapes (chapter / verse counts) ---------------------
+  // Only the Tanakh needs a live shape fetch; NT and Quran ship full tables.
   function ensureShape(book) {
+    if (root.corpus !== "tanakh") return
     if (!book || root._shapes[book] || root._shapePending[book]) return
     root._shapePending[book] = true
     root._shapeQueue.push(book)
@@ -523,18 +876,20 @@ Panel {
   }
 
   // ---- processes ----------------------------------------
+  readonly property string _sourceName: root.cx.host
+
   Process {
     id: fetchProc
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
         var t = String(text || "").trim()
-        if (t === "") { root.loading = false; root.errorText = "No answer from Sefaria."; return }
+        if (t === "") { root.loading = false; root.errorText = "No answer from " + root._sourceName + "."; return }
         var data
         try { data = JSON.parse(t) }
-        catch (e) { root.loading = false; root.errorText = "Could not read Sefaria's reply."; return }
-        if (data.error) { root.loading = false; root.errorText = String(data.error); return }
-        var entry = root.buildEntry(data)
+        catch (e) { root.loading = false; root.errorText = "Could not read the reply from " + root._sourceName + "."; return }
+        var entry = root.buildEntryFor(data, root.pendingRef)
+        if (entry.error) { root.loading = false; root.errorText = String(entry.error); return }
         if (entry.he.length === 0 && entry.en.length === 0) {
           root.loading = false; root.errorText = "Nothing here for that reference."; return
         }
@@ -550,8 +905,8 @@ Panel {
         if (e === "" || !root.loading) return
         root.loading = false
         root.errorText = e.indexOf("404") !== -1
-          ? "Sefaria doesn't recognise “" + root.pendingRef + "”."
-          : "Could not reach Sefaria."
+          ? root._sourceName + " doesn't recognise “" + root.pendingRef + "”."
+          : "Could not reach " + root._sourceName + "."
       }
     }
   }
@@ -563,12 +918,10 @@ Panel {
       onStreamFinished: {
         try {
           var d = JSON.parse(String(text || "").trim())
-          if (d && !d.error) {
-            var e = root.buildEntry(d)
-            if (e.he.length > 0 || e.en.length > 0) {
-              root.cachePut(root._prefetchActive, e)
-              if (e.loadedRef) root.cachePut(e.loadedRef, e)
-            }
+          var e = root.buildEntryFor(d, root._prefetchActive)
+          if (e && !e.error && (e.he.length > 0 || e.en.length > 0)) {
+            root.cachePut(root._prefetchActive, e)
+            if (e.loadedRef) root.cachePut(e.loadedRef, e)
           }
         } catch (err) { /* a missed prefetch just means a slower step later */ }
       }
@@ -677,11 +1030,11 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     text: {
-      var label = root.loadedRef !== "" ? root.loadedRef : root.ref
+      var label = root.displayRef !== "" ? root.displayRef : root.ref
       return (root.showRefInBar && label !== "") ? (root.barIcon + "  " + label) : root.barIcon
     }
-    tooltipText: (root.loadedRef !== "" ? root.loadedRef + "  —  " : "")
-      + "left-click to open · middle-click for a random verse"
+    tooltipText: (root.displayRef !== "" ? root.displayRef + "  —  " : "")
+      + "left-click to open · middle-click for a random passage"
     onPressed: function(which) {
       if (which === Qt.RightButton) {
         root.showRefInBar = !root.showRefInBar
@@ -723,7 +1076,7 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       // Only the book search field swallows keys; everything else is buttons.
-      blocked: bookDrop.popupOpen
+      blocked: bookDrop.popupOpen || corpusDrop.popupOpen
       onCloseRequested: root.close()
       // h / l (← / →) walk verses; j / k (↑ / ↓) scroll a long passage.
       onMoveRequested: function(dx, dy) {
@@ -771,7 +1124,7 @@ Panel {
             Layout.alignment: Qt.AlignVCenter
             Layout.maximumWidth: Style.space(230)
             textFormat: Text.PlainText
-            text: root.loadedRef !== "" ? root.loadedRef : "Verse"
+            text: root.displayRef !== "" ? root.displayRef : "Verse"
             color: root.fg
             font.family: root.fontFamily
             font.pixelSize: Style.font.subtitle
@@ -824,30 +1177,57 @@ Panel {
             textFormat: Text.PlainText
             text: root.loadedHeRef
             color: root.fg
-            font.family: root.hebrewFont
+            font.family: root.nativeFont
             font.pixelSize: Style.font.subtitle
             font.bold: true
             elide: Text.ElideRight
           }
         }
 
-        // ---- book
-        SearchableDropdown {
-          id: bookDrop
+        // ---- corpus + book / surah
+        RowLayout {
           Layout.fillWidth: true
-          showLabel: false
-          value: "Genesis"
-          options: root.books
-          placeholderText: "Find a book…"
-          foreground: root.fg
-          accent: Color.accent
-          fontFamily: root.fontFamily
-          onChanged: function(v) {
-            if (root.syncingMenu) return
-            root.ensureShape(v)
-            root.load(v + " 1:1", true)
+          spacing: Style.space(6)
+
+          SearchableDropdown {
+            id: corpusDrop
+            Layout.preferredWidth: Style.space(150)
+            showLabel: false
+            value: root.cx.label
+            options: root.corpusOptions
+            placeholderText: "Corpus"
+            foreground: root.fg
+            accent: Color.accent
+            fontFamily: root.fontFamily
+            onChanged: function(v) {
+              if (root.syncingMenu) return
+              root.setCorpus(root._corpusKey[v] || "tanakh")
+            }
+            onHovered: function(h) { if (h) keyCatcher.forceActiveFocus() }
           }
-          onHovered: function(h) { if (h) keyCatcher.forceActiveFocus() }
+
+          SearchableDropdown {
+            id: bookDrop
+            Layout.fillWidth: true
+            showLabel: false
+            value: "Genesis"
+            options: root.cx.books
+            placeholderText: root.corpus === "quran" ? "Find a surah…" : "Find a book…"
+            foreground: root.fg
+            accent: Color.accent
+            fontFamily: root.fontFamily
+            onChanged: function(v) {
+              if (root.syncingMenu) return
+              if (root.corpus === "quran") {
+                var n = root.surahNames.indexOf(v)
+                if (n >= 0) root.load("Quran " + (n + 1) + ":1", true)
+              } else {
+                root.ensureShape(v)
+                root.load(v + " 1:1", true)
+              }
+            }
+            onHovered: function(h) { if (h) keyCatcher.forceActiveFocus() }
+          }
         }
 
         // ---- chapter / verse steppers + random
@@ -858,7 +1238,7 @@ Panel {
           RowLayout {
             spacing: Style.space(3)
             Text {
-              text: "CHAPTER"
+              text: root.cx.unit.toUpperCase()
               color: Qt.darker(root.fg, 2.1)
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -870,7 +1250,7 @@ Panel {
               foreground: root.fg
               enabled: root.canPrevChap
               opacity: enabled ? 1.0 : 0.25
-              tooltipText: "Previous chapter  ( [ )"
+              tooltipText: "Previous " + root.cx.unit + "  ( [ )"
               fontFamily: root.fontFamily
               fontSize: Style.font.body
               horizontalPadding: Style.spacing.controlGap
@@ -900,7 +1280,7 @@ Panel {
               TapHandler { enabled: chapNum.resettable; onTapped: root.goToChapter(1) }
               PanelToolTip {
                 visible: chapNumHover.hovered && chapNum.resettable
-                text: "Jump to chapter 1"
+                text: "Jump to " + root.cx.unit + " 1"
                 panelForeground: root.fg
                 fontFamily: root.fontFamily
               }
@@ -910,7 +1290,7 @@ Panel {
               foreground: root.fg
               enabled: root.canNextChap
               opacity: enabled ? 1.0 : 0.25
-              tooltipText: "Next chapter  ( ] )"
+              tooltipText: "Next " + root.cx.unit + "  ( ] )"
               fontFamily: root.fontFamily
               fontSize: Style.font.body
               horizontalPadding: Style.spacing.controlGap
@@ -923,7 +1303,7 @@ Panel {
           RowLayout {
             spacing: Style.space(3)
             Text {
-              text: "VERSE"
+              text: root.cx.sub.toUpperCase()
               color: Qt.darker(root.fg, 2.1)
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -935,7 +1315,7 @@ Panel {
               foreground: root.fg
               enabled: root.canPrevVerse
               opacity: enabled ? 1.0 : 0.25
-              tooltipText: "Previous verse  ( h )"
+              tooltipText: "Previous " + root.cx.sub + "  ( h )"
               fontFamily: root.fontFamily
               fontSize: Style.font.body
               horizontalPadding: Style.spacing.controlGap
@@ -964,7 +1344,7 @@ Panel {
               TapHandler { enabled: verseNum.resettable; onTapped: root.goToVerseOne() }
               PanelToolTip {
                 visible: verseNumHover.hovered && verseNum.resettable
-                text: "Jump to verse 1"
+                text: "Jump to " + root.cx.sub + " 1"
                 panelForeground: root.fg
                 fontFamily: root.fontFamily
               }
@@ -974,7 +1354,7 @@ Panel {
               foreground: root.fg
               enabled: root.canNextVerse
               opacity: enabled ? 1.0 : 0.25
-              tooltipText: "Next verse  ( l )"
+              tooltipText: "Next " + root.cx.sub + "  ( l )"
               fontFamily: root.fontFamily
               fontSize: Style.font.body
               horizontalPadding: Style.spacing.controlGap
@@ -1004,7 +1384,7 @@ Panel {
             text: "Random"
             foreground: root.fg
             enabled: !root.loading
-            tooltipText: "A random passage from the Tanakh  (r)"
+            tooltipText: "A random passage from the " + root.cx.label + "  (r)"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
             horizontalPadding: Style.spacing.controlPaddingX
@@ -1017,7 +1397,8 @@ Panel {
           Layout.fillWidth: true
           horizontalAlignment: Text.AlignHCenter
           textFormat: Text.PlainText
-          text: "h l  verse    j k  scroll    [ ]  chapter    r  random    b  back    s  swap"
+          text: "h l  " + root.cx.sub + "    j k  scroll    [ ]  " + root.cx.unit
+            + "    r  random    b  back    s  swap"
           color: Qt.darker(root.fg, 2.4)
           font.family: root.fontFamily
           font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -1030,10 +1411,10 @@ Panel {
           spacing: Style.space(5)
 
           Button {
-            text: "Hebrew"
+            text: root.cx.nativeLabel
             foreground: root.fg
             active: root.showHebrew
-            tooltipText: "Show the Hebrew text"
+            tooltipText: "Show the " + root.cx.nativeLabel + " text"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
             horizontalPadding: Style.spacing.controlPaddingX
@@ -1045,7 +1426,7 @@ Panel {
             text: "English"
             foreground: root.fg
             active: root.showEnglish
-            tooltipText: "Show the JPS 1917 translation"
+            tooltipText: "Show the " + root.cx.c2.replace(" (public domain)", "") + " translation"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
             horizontalPadding: Style.spacing.controlPaddingX
@@ -1058,7 +1439,8 @@ Panel {
             text: "\uf07d"   // nf-fa-arrows_v
             foreground: root.fg
             visible: root.showHebrew && root.showEnglish
-            tooltipText: root.hebrewFirst ? "Put English on top" : "Put Hebrew on top"
+            tooltipText: root.hebrewFirst
+              ? "Put English on top" : "Put the " + root.cx.nativeLabel + " on top"
             fontFamily: root.fontFamily
             fontSize: Style.font.body
             horizontalPadding: Style.spacing.controlGap
@@ -1068,6 +1450,7 @@ Panel {
 
           Rectangle {
             Layout.alignment: Qt.AlignVCenter
+            visible: root.cx.hasTrop || root.cx.hasVowels
             implicitWidth: Style.spacing.hairline
             implicitHeight: Style.space(16)
             color: root.fg
@@ -1079,6 +1462,7 @@ Panel {
             foreground: root.fg
             active: root.heTaamim
             enabled: root.showHebrew
+            visible: root.cx.hasTrop
             tooltipText: "Cantillation marks (te'amim)"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
@@ -1088,11 +1472,12 @@ Panel {
           }
 
           Button {
-            text: "Niqqud"
+            text: root.cx.vowelLabel
             foreground: root.fg
             active: root.heNiqqud
             enabled: root.showHebrew
-            tooltipText: "Vowel points"
+            visible: root.cx.hasVowels
+            tooltipText: root.corpus === "quran" ? "Vowel marks (tashkeel)" : "Vowel points"
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
             horizontalPadding: Style.spacing.controlPaddingX
@@ -1177,7 +1562,7 @@ Panel {
           visible: !root.loading && root.verses.length > 0 && !root.showHebrew && !root.showEnglish
           Layout.fillWidth: true
           textFormat: Text.PlainText
-          text: "Both Hebrew and English are hidden."
+          text: "Both " + root.cx.nativeLabel + " and English are hidden."
           color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
@@ -1264,10 +1649,10 @@ Panel {
                   textFormat: Text.PlainText
                   text: verseBlock.heText
                   color: root.fg
-                  font.family: root.hebrewFont
+                  font.family: root.nativeFont
                   font.pixelSize: Math.round(Style.font.display * root.textScale)
-                  horizontalAlignment: Text.AlignRight
-                  lineHeight: 1.5
+                  horizontalAlignment: root.cx.rtl ? Text.AlignRight : Text.AlignLeft
+                  lineHeight: root.corpus === "quran" ? 1.85 : 1.5
                   wrapMode: Text.WordWrap
                 }
 
@@ -1299,7 +1684,7 @@ Panel {
 
           Text {
             textFormat: Text.PlainText
-            text: "MAM (CC BY-SA)"
+            text: root.cx.c1
             color: Qt.darker(root.fg, 2.4)
             font.family: root.fontFamily
             font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -1309,7 +1694,7 @@ Panel {
 
           Text {
             textFormat: Text.PlainText
-            text: "JPS 1917 (public domain)"
+            text: root.cx.c2
             color: Qt.darker(root.fg, 2.4)
             font.family: root.fontFamily
             font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -1317,11 +1702,11 @@ Panel {
             elide: Text.ElideRight
           }
 
-          // Opens the current passage on sefaria.org in the browser.
+          // Opens the current passage on the source site in the browser.
           Text {
             id: sefariaLink
             textFormat: Text.PlainText
-            text: "sefaria.org"
+            text: root.cx.host
             color: sefariaLinkHover.hovered ? root.fg : Qt.darker(root.fg, 1.9)
             font.family: root.fontFamily
             font.pixelSize: Math.round(Style.font.caption * 0.9)
@@ -1329,10 +1714,10 @@ Panel {
             font.underline: sefariaLinkHover.hovered
 
             HoverHandler { id: sefariaLinkHover; cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: root.openSefaria() }
+            TapHandler { onTapped: root.openSource() }
             PanelToolTip {
               visible: sefariaLinkHover.hovered
-              text: "Open this passage on sefaria.org"
+              text: "Open this passage on " + root.cx.host
               panelForeground: root.fg
               fontFamily: root.fontFamily
             }

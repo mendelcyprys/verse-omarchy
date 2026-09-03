@@ -2,21 +2,22 @@
   "schemaVersion": 1,
   "id": "erikmanhem.verse",
   "name": "Verse",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "author": "Erik Manhem",
   "license": "MIT",
-  "description": "Read the Tanakh in Hebrew and the JPS 1917 translation, in a dropdown from the bar.",
+  "description": "Read the Tanakh, New Testament or Quran in the original language alongside a public-domain English translation, in a dropdown from the bar.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "omarchy/Panel.qml"
   },
   "barWidget": {
     "displayName": "Verse",
-    "description": "Pick a chapter and verse; read it in Hebrew and JPS 1917.",
+    "description": "Pick a passage; read it in Hebrew / Greek / Arabic and English.",
     "category": "Info",
     "allowMultiple": false,
     "defaultSection": "center",
     "defaults": {
+      "corpus": "tanakh",
       "ref": "Genesis 1:1",
       "showRefInBar": false
     }
