@@ -1784,16 +1784,16 @@ Panel {
           Canvas {
             id: grain
             anchors.fill: parent
-            opacity: 0.9
+            opacity: 1.0
             onPaint: {
               var ctx = getContext("2d")
               ctx.clearRect(0, 0, width, height)
-              var n = Math.floor(width * height / 20)
+              var n = Math.floor(width * height / 14)
               for (var i = 0; i < n; i++) {
                 ctx.fillStyle = (i % 2)
-                  ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)"
+                  ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.09)"
                 ctx.fillRect(Math.random() * width, Math.random() * height,
-                             Math.random() < 0.8 ? 1 : 2, 1)
+                             Math.random() < 0.78 ? 1 : 2, 1)
               }
             }
             onWidthChanged: requestPaint()
